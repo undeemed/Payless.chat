@@ -1,8 +1,45 @@
+"use client";
+
+import { useEffect } from "react";
+import { createClient } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
+
 export default function HomePage() {
+  const router = useRouter();
+  
   // Supabase OAuth URL - redirects to /auth/callback which then goes to /dashboard
   const supabaseUrl = "https://bycsqbjaergjhwzbulaa.supabase.co";
   const redirectTo = "https://payless.chat/auth/callback";
   const signUpUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
+
+  // Handle tokens that might be in the URL hash (implicit flow redirect)
+  useEffect(() => {
+    const handleHashTokens = async () => {
+      const hash = window.location.hash;
+      
+      if (hash && hash.includes("access_token")) {
+        const supabase = createClient();
+        const params = new URLSearchParams(hash.substring(1));
+        const accessToken = params.get("access_token");
+        const refreshToken = params.get("refresh_token");
+
+        if (accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+
+          if (!error) {
+            // Clear the hash and redirect to dashboard
+            window.history.replaceState(null, "", "/");
+            router.push("/dashboard");
+          }
+        }
+      }
+    };
+
+    handleHashTokens();
+  }, [router]);
 
   return (
     <div className="min-h-screen flex flex-col">
