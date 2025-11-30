@@ -73,7 +73,7 @@ export function AdBanner({ variant = "default", className = "" }: AdBannerProps)
                 ref={adRef}
                 className="adsbygoogle"
                 style={getAdStyle()}
-                data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+                data-ad-client="ca-pub-6034027262191917"
                 data-ad-slot="XXXXXXXXXX"
                 data-ad-format={getAdFormat()}
                 data-full-width-responsive="true"
