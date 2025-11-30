@@ -1,7 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { supabaseUrl, supabaseAnonKey } from '@/lib/supabase';
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -11,8 +10,8 @@ export async function GET(request: Request) {
   if (code) {
     const cookieStore = await cookies();
     const supabase = createServerClient(
-      supabaseUrl,
-      supabaseAnonKey,
+      "https://bycsqbjaergjhwzbulaa.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5Y3NxYmphZXJnamh3emJ1bGFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0NDYyODksImV4cCI6MjA4MDAyMjI4OX0.QOwTw7YhqvZRr-ceaR0vAu3jQUQWtjkucu17LJPexMg",
       {
         cookies: {
           getAll() {
@@ -24,7 +23,7 @@ export async function GET(request: Request) {
                 cookieStore.set(name, value, options)
               );
             } catch {
-              // Ignore - called from Server Component
+              // Ignore errors in Server Components
             }
           },
         },
@@ -36,9 +35,10 @@ export async function GET(request: Request) {
     if (!error) {
       return NextResponse.redirect(`${origin}${next}`);
     }
+    
+    console.error('Auth callback error:', error);
   }
 
   // Return to home on error
   return NextResponse.redirect(`${origin}/?error=auth`);
 }
-
