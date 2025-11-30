@@ -1,6 +1,9 @@
-import Link from 'next/link';
-
 export default function HomePage() {
+  // Supabase OAuth URL
+  const supabaseUrl = "https://bycsqbjaergjhwzbulaa.supabase.co";
+  const redirectTo = "https://payless.chat";
+  const signUpUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Hero Section */}
@@ -19,18 +22,16 @@ export default function HomePage() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             <a
-              href="vscode:extension/payless-ai.payless-ai"
+              href={signUpUrl}
               className="w-full sm:w-auto px-8 py-4 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-all text-lg"
             >
-              Install Extension
+              Sign Up Free
             </a>
             <a
-              href="https://github.com/undeemed/Payless.ai"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="vscode:extension/payless-ai.payless-ai"
               className="w-full sm:w-auto px-8 py-4 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/80 transition-all text-lg"
             >
-              View Source
+              Install Extension
             </a>
           </div>
         </div>
@@ -100,7 +101,7 @@ export default function HomePage() {
                 <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xl shrink-0">2</div>
                 <div>
                   <h3 className="text-xl font-bold mb-2">Earn Credits Automatically</h3>
-                  <p className="text-muted-foreground">While the sidebar is visible, you earn 10 credits per minute. That's about 600 credits per hour of coding.</p>
+                  <p className="text-muted-foreground">While the sidebar is visible, you earn 10 credits per minute. That&apos;s about 600 credits per hour of coding.</p>
                 </div>
               </div>
 
