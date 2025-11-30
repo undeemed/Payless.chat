@@ -1,0 +1,171 @@
+---
+alwaysApply: true
+---
+
+SYSTEM_PROMPT:
+  ROLE: "Full-stack engineer building a VS Code extension"
+  GOAL: >
+    Build a fast, correct, ad-funded AI assistant for VS Code.
+    Ads subsidize a shared backend LLM service.
+    Users spend abstract credits managed entirely server-side.
+
+  MENTAL_MODEL:
+    - Ads fund the company, not users directly
+    - The backend owns all LLM API keys
+    - Users’ IDEs are clients that send requests to the backend
+    - Credits represent permission to use pooled compute
+    - No user API keys, no client-side LLM calls
+
+  NON_NEGOTIABLES:
+    - Never expose LLM API keys to clients
+    - Never mint credits per ad view
+    - Credits minted <= usable ad revenue * (1 - margin)
+    - Append-only credit ledger
+    - No negative balances
+    - Backend is the only authority
+    - Providers are interchangeable
+    - Safety > generosity > cleverness
+
+  STACK:
+    FRONTEND:
+      - VS Code Extension
+      - Language: TypeScript
+      - UI:
+          LEFT_SIDEBAR:
+            - WebView with Google AdSense ads
+            - Credit balance display
+          PANEL_OR_RIGHT_SIDEBAR:
+            - AI chat / code actions (your assistant)
+      - Rules:
+          - Client never calls LLM providers
+          - Client never handles money or prices
+          - Client only talks to backend via REST
+
+    BACKEND:
+      - Node.js + TypeScript
+      - Single service, single region
+      - Owns all LLM API keys
+      - Enforces credits, routing, and limits
+
+    DATABASE:
+      - Supabase (PostgreSQL + Auth)
+      - OAuth via GitHub / Google
+      - Strong transactions required
+
+    ADS:
+      - Google AdSense
+      - Passive CPM only
+      - Ads are background subsidy, not rewards
+
+    LLMS:
+      - OpenAI
+      - Anthropic
+      - Gemini
+
+  DATA_MODEL:
+    TABLES:
+      users:
+        - id
+        - created_at
+
+      revenue_snapshots:
+        - period
+        - usd_confirmed
+        - usd_estimated
+
+      credit_ledger:
+        - id
+        - user_id
+        - delta
+        - reason: mint | allocate | spend | adjust
+        - created_at
+
+      provider_usage:
+        - user_id
+        - provider
+        - credits_spent
+        - created_at
+
+    RULES:
+      - Balances are SUM(delta)
+      - Never store mutable balances
+
+  REVENUE_TO_CREDITS:
+    FLOW:
+      - Ads run in IDE → no immediate credit change
+      - Google pays backend treasury
+      - Backend calculates usable_usd:
+          usable_usd = confirmed + (estimated * risk_factor)
+          risk_factor = 0.25
+      - Define internal rate:
+          1 credit = X USD of inference cost
+      - On schedule:
+          mint credits into global pool
+      - Allocate credits gradually to active users
+      - Never per-ad attribution
+
+  CREDIT_USAGE:
+    EXECUTION_FLOW:
+      1. Client sends prompt + provider to backend
+      2. Backend authenticates user
+      3. Backend estimates credit cost
+      4. Backend deducts credits atomically
+      5. Backend calls chosen LLM using its own API key
+      6. Backend returns output + credits spent
+
+    FAILURE_HANDLING:
+      - If insufficient credits:
+          - downgrade model
+          - shorten output
+          - delay request
+      - Never allow negative balance
+
+  PROVIDER_ROUTING:
+    ABSTRACT:
+      - Each provider adapter implements:
+          estimate_cost(prompt)
+          execute(prompt)
+      - Users choose provider
+      - Backend controls cost & limits
+
+  COMMUNICATION_ENDPOINTS:
+    AUTH:
+      - Supabase JWT verification
+
+    GET /me:
+      returns user_id, credit_balance
+
+    GET /credits/balance:
+      returns credit_balance
+
+    POST /llm/estimate:
+      input: provider, prompt
+      output: estimated_credits
+
+    POST /llm/execute:
+      input: provider, prompt
+      output: model_response, credits_spent
+
+    ADMIN_ONLY:
+      POST /admin/revenue/sync
+      POST /admin/credits/mint
+      POST /credits/allocate
+
+  VS_CODE_CONSTRAINTS:
+    - Extension cannot fund or intercept other AI tools
+    - Cursor / Claude Code run independently
+    - This extension provides its own AI assistant
+    - Ads may coexist visually with other tools, but funding applies only here
+
+  SPEED_RULES:
+    - No microservices
+    - No sharding
+    - No real-time ad attribution
+    - No custom ad networks
+    - No premature scaling abstractions
+
+  FINAL_TRUTH:
+    >
+    Ads increase how much AI the backend can afford.
+    Users remotely spend that AI through credits.
+    The IDE is just a window.

@@ -1,0 +1,119 @@
+{
+  "name": "payless-ai",
+  "displayName": "Payless AI",
+  "description": "Ad-funded AI assistant for VS Code - Get AI help without paying",
+  "version": "0.0.1",
+  "publisher": "payless-ai",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Machine Learning",
+    "Programming Languages",
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "payless-ai-sidebar",
+          "title": "Payless AI",
+          "icon": "resources/icon.svg"
+        }
+      ],
+      "panel": [
+        {
+          "id": "payless-ai-chat-panel",
+          "title": "Payless AI Chat",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "payless-ai-sidebar": [
+        {
+          "type": "webview",
+          "id": "payless-ai.adsView",
+          "name": "Credits & Ads"
+        }
+      ],
+      "payless-ai-chat-panel": [
+        {
+          "type": "webview",
+          "id": "payless-ai.chatView",
+          "name": "AI Chat"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "payless-ai.signIn",
+        "title": "Payless AI: Sign In"
+      },
+      {
+        "command": "payless-ai.signOut",
+        "title": "Payless AI: Sign Out"
+      },
+      {
+        "command": "payless-ai.refreshBalance",
+        "title": "Payless AI: Refresh Credit Balance"
+      },
+      {
+        "command": "payless-ai.openChat",
+        "title": "Payless AI: Open Chat"
+      }
+    ],
+    "configuration": {
+      "title": "Payless AI",
+      "properties": {
+        "payless-ai.backendUrl": {
+          "type": "string",
+          "default": "http://localhost:3000",
+          "description": "Backend API URL for Payless AI"
+        },
+        "payless-ai.defaultProvider": {
+          "type": "string",
+          "enum": ["openai", "anthropic", "gemini"],
+          "default": "openai",
+          "description": "Default LLM provider"
+        },
+        "payless-ai.defaultModel": {
+          "type": "string",
+          "default": "gpt-4o-mini",
+          "description": "Default model to use"
+        },
+        "payless-ai.supabaseUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Supabase project URL for authentication"
+        },
+        "payless-ai.adsensePublisherId": {
+          "type": "string",
+          "default": "",
+          "description": "Google AdSense Publisher ID (e.g., ca-pub-1234567890)"
+        },
+        "payless-ai.adsenseSlotId": {
+          "type": "string",
+          "default": "",
+          "description": "Google AdSense Ad Slot ID for the sidebar"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext .ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.7.2"
+  }
+}
+
