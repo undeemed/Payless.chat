@@ -17,6 +17,7 @@ export const COST_PER_1K_TOKENS: Record<string, { input: number; output: number 
 
   // Google models
   'gemini-3-pro': { input: 2, output: 8 },
+  'gemini-3': { input: 1.5, output: 6 },
   'gemini-2.0-flash': { input: 0.1, output: 0.4 },
   'gemini-1.5-pro': { input: 1.25, output: 5 },
   'gemini-1.5-flash': { input: 0.075, output: 0.3 },
@@ -33,7 +34,7 @@ export const DEFAULT_MODELS: Record<string, string> = {
 export const AVAILABLE_MODELS: Record<string, string[]> = {
   openai: ['gpt-5', 'gpt-4o', 'gpt-4o-mini', 'o3-mini'],
   anthropic: ['claude-sonnet-4-5-20250514', 'claude-sonnet-4-20250514', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022'],
-  gemini: ['gemini-3-pro', 'gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'],
+  gemini: ['gemini-3-pro', 'gemini-3', 'gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'],
 };
 
 // Estimate token count from text (rough approximation)
