@@ -12,9 +12,34 @@ export interface CreditLedgerEntry {
   id: string;
   user_id: string;
   delta: number;
-  reason: 'mint' | 'allocate' | 'spend' | 'adjust';
+  reason: 'mint' | 'allocate' | 'spend' | 'adjust' | 'ad_view';
   description: string | null;
   created_at: string;
+}
+
+export interface AdSession {
+  id: string;
+  user_id: string;
+  started_at: string;
+  last_heartbeat: string;
+  total_seconds: number;
+  credits_earned: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface AdStats {
+  total_seconds_all_time: number;
+  total_credits_earned: number;
+  total_seconds_today: number;
+  credits_earned_today: number;
+}
+
+export interface HeartbeatResponse {
+  credits_earned: number;
+  total_credits: number;
+  session_seconds: number;
+  credits_per_minute: number;
 }
 
 export interface RevenueSnapshot {

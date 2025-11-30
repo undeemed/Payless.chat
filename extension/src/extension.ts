@@ -17,7 +17,7 @@ export function activate(context: vscode.ExtensionContext) {
   supabaseAuth = new SupabaseAuth(context);
 
   // Initialize sidebar provider (embeds payless.chat/extension)
-  adsSidebarProvider = new AdsSidebarProvider(context);
+  adsSidebarProvider = new AdsSidebarProvider(context, apiClient);
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider('payless-ai.adsView', adsSidebarProvider)
   );

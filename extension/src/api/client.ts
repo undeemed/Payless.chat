@@ -46,6 +46,28 @@ export interface ModelsResponse {
   providers: Record<string, string[]>;
 }
 
+export interface HeartbeatResponse {
+  credits_earned: number;
+  total_credits: number;
+  session_seconds: number;
+  credits_per_minute: number;
+}
+
+export interface AdStatsResponse {
+  total_seconds_all_time: number;
+  total_credits_earned: number;
+  total_seconds_today: number;
+  credits_earned_today: number;
+  current_balance: number;
+  credits_per_minute: number;
+}
+
+export interface AdConfigResponse {
+  credits_per_minute: number;
+  heartbeat_interval_seconds: number;
+  session_timeout_seconds: number;
+}
+
 export class ApiClient {
   private token: string | null = null;
 
@@ -134,6 +156,19 @@ export class ApiClient {
     } catch {
       return false;
     }
+  }
+
+  // Ad endpoints
+  async sendHeartbeat(): Promise<HeartbeatResponse> {
+    return this.request<HeartbeatResponse>('POST', '/ads/heartbeat');
+  }
+
+  async getAdStats(): Promise<AdStatsResponse> {
+    return this.request<AdStatsResponse>('GET', '/ads/stats');
+  }
+
+  async getAdConfig(): Promise<AdConfigResponse> {
+    return this.request<AdConfigResponse>('GET', '/ads/config');
   }
 }
 

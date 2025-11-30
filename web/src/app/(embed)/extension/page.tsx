@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 declare global {
   interface Window {
@@ -8,7 +8,46 @@ declare global {
   }
 }
 
+interface BalanceUpdate {
+  type: 'balanceUpdate';
+  credits: number;
+  creditsPerMinute: number;
+  isEarning: boolean;
+}
+
 export default function ExtensionPage() {
+  const [credits, setCredits] = useState<number | null>(null);
+  const [creditsPerMinute, setCreditsPerMinute] = useState(10);
+  const [isEarning, setIsEarning] = useState(false);
+  const [lastEarnTime, setLastEarnTime] = useState<number | null>(null);
+
+  // Handle messages from parent (VS Code extension)
+  const handleMessage = useCallback((event: MessageEvent) => {
+    const data = event.data as BalanceUpdate;
+    if (data && data.type === 'balanceUpdate') {
+      setCredits(data.credits);
+      setCreditsPerMinute(data.creditsPerMinute);
+      setIsEarning(data.isEarning);
+      if (data.isEarning) {
+        setLastEarnTime(Date.now());
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    // Listen for balance updates from parent
+    window.addEventListener('message', handleMessage);
+
+    // Request initial balance from parent
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'requestBalance' }, '*');
+    }
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [handleMessage]);
+
   useEffect(() => {
     // Initialize all ads
     try {
@@ -20,6 +59,29 @@ export default function ExtensionPage() {
       console.error('AdSense error:', e);
     }
   }, []);
+
+  // Auto-fade earning indicator after 5 seconds of no updates
+  useEffect(() => {
+    if (lastEarnTime) {
+      const timeout = setTimeout(() => {
+        if (Date.now() - lastEarnTime > 5000) {
+          setIsEarning(false);
+        }
+      }, 5000);
+      return () => clearTimeout(timeout);
+    }
+  }, [lastEarnTime]);
+
+  // Format credits for display
+  const formatCredits = (value: number) => {
+    if (value >= 1000000) {
+      return `${(value / 1000000).toFixed(1)}M`;
+    }
+    if (value >= 1000) {
+      return `${(value / 1000).toFixed(1)}K`;
+    }
+    return Math.floor(value).toLocaleString();
+  };
 
   return (
     <div className="min-h-screen bg-[#1e1e1e] text-white flex flex-col">
@@ -38,12 +100,55 @@ export default function ExtensionPage() {
 
       {/* Credit Display */}
       <div className="p-3 flex-shrink-0">
-        <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-xl p-4 shadow-lg">
-          <div className="text-[10px] uppercase tracking-wider text-white/70 mb-1">Your Credits</div>
-          <div className="text-3xl font-bold">∞</div>
-          <div className="text-xs text-white/70 mt-2 flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-            Ads funding your AI
+        <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-xl p-4 shadow-lg relative overflow-hidden">
+          {/* Earning animation background */}
+          {isEarning && (
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
+          )}
+          
+          <div className="relative">
+            <div className="text-[10px] uppercase tracking-wider text-white/70 mb-1">Your Credits</div>
+            <div className="text-3xl font-bold tabular-nums">
+              {credits === null ? (
+                <span className="animate-pulse">---</span>
+              ) : (
+                formatCredits(credits)
+              )}
+            </div>
+            
+            {/* Earning indicator */}
+            <div className="text-xs text-white/70 mt-2 flex items-center gap-1">
+              {isEarning ? (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                  <span>+{creditsPerMinute}/min</span>
+                </>
+              ) : credits === null ? (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-yellow-400" />
+                  <span>Sign in to earn</span>
+                </>
+              ) : (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-gray-400" />
+                  <span>Keep sidebar open to earn</span>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Earning Rate Info */}
+      <div className="px-3 pb-2 flex-shrink-0">
+        <div className="bg-[#252526] rounded-lg p-3 border border-white/5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-gray-400">Earn rate</span>
+            <span className="text-green-400 font-medium">{creditsPerMinute} credits/min</span>
+          </div>
+          <div className="flex items-center justify-between text-xs mt-1">
+            <span className="text-gray-400">Per hour</span>
+            <span className="text-white/80">~{creditsPerMinute * 60} credits</span>
           </div>
         </div>
       </div>
@@ -114,7 +219,17 @@ export default function ExtensionPage() {
           </a>
         </div>
       </footer>
+
+      {/* Custom styles for shimmer animation */}
+      <style jsx>{`
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+        .animate-shimmer {
+          animation: shimmer 2s infinite;
+        }
+      `}</style>
     </div>
   );
 }
-

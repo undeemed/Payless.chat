@@ -7,6 +7,7 @@ import authRoutes from './routes/auth.js';
 import creditRoutes from './routes/credits.js';
 import llmRoutes from './routes/llm.js';
 import adminRoutes from './routes/admin.js';
+import adsRoutes from './routes/ads.js';
 
 // Load environment variables
 dotenv.config();
@@ -28,6 +29,7 @@ app.use('/', authRoutes);
 app.use('/credits', creditRoutes);
 app.use('/llm', llmRoutes);
 app.use('/admin', adminRoutes);
+app.use('/ads', adsRoutes);
 
 // Error handling
 app.use(errorHandler);
