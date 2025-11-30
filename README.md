@@ -7,6 +7,7 @@ An ad-funded AI assistant for VS Code. Get AI help without paying - ads subsidiz
 - **Backend**: Node.js + TypeScript API that owns all LLM API keys
 - **Extension**: VS Code extension with ad sidebar and AI chat panel
 - **Database**: Supabase (PostgreSQL + Auth with Google OAuth)
+- **Web**: Next.js website at [payless.chat](https://payless.chat)
 
 ## Project Structure
 
@@ -25,6 +26,28 @@ payless.ai/
 - Node.js 18+
 - A Supabase project with Google OAuth configured
 - API keys for OpenAI, Anthropic, and/or Google AI
+
+### Supabase Setup
+
+1. Create a new project at [supabase.com](https://supabase.com)
+2. Run the migrations in `supabase/migrations/` in order
+3. Configure Google OAuth:
+
+**Auth Callback URL:**
+```
+https://bycsqbjaergjhwzbulaa.supabase.co/auth/v1/callback
+```
+
+**Google OAuth Setup:**
+1. Go to [Google Cloud Console](https://console.cloud.google.com)
+2. Create a new project or select existing
+3. Enable the Google+ API
+4. Go to Credentials → Create OAuth 2.0 Client ID
+5. Add authorized redirect URI: `https://bycsqbjaergjhwzbulaa.supabase.co/auth/v1/callback`
+6. Copy Client ID and Client Secret
+7. In Supabase Dashboard → Authentication → Providers → Google:
+   - Enable Google provider
+   - Paste Client ID and Client Secret
 
 ### Backend Setup
 
@@ -50,7 +73,7 @@ npm run compile
 
 | Variable | Description |
 |----------|-------------|
-| `SUPABASE_URL` | Your Supabase project URL |
+| `SUPABASE_URL` | `https://bycsqbjaergjhwzbulaa.supabase.co` |
 | `SUPABASE_SERVICE_KEY` | Supabase service role key |
 | `SUPABASE_JWT_SECRET` | JWT secret for token verification |
 | `OPENAI_API_KEY` | OpenAI API key |
@@ -65,38 +88,59 @@ Configure in VS Code Settings (`Cmd+,` or `Ctrl+,`):
 | Setting | Description |
 |---------|-------------|
 | `payless-ai.backendUrl` | Backend API URL (default: http://localhost:3000) |
-| `payless-ai.supabaseUrl` | Your Supabase project URL for auth |
-| `payless-ai.adsensePublisherId` | Google AdSense Publisher ID (e.g., `ca-pub-1234567890`) |
-| `payless-ai.adsenseSlotId` | AdSense Ad Slot ID for the sidebar |
+| `payless-ai.supabaseUrl` | `https://bycsqbjaergjhwzbulaa.supabase.co` |
+| `payless-ai.extensionPageUrl` | `https://payless.chat/extension` |
+
+## Credit System
+
+Users earn credits by watching ads in the sidebar. The system is time-based:
+
+| Metric | Value |
+|--------|-------|
+| Earn rate | **10 credits/minute** |
+| Per hour | ~600 credits |
+| Heartbeat interval | 30 seconds |
+| Session timeout | 60 seconds |
+
+### How Credits Work
+
+1. User opens the extension sidebar (shows ads)
+2. Extension sends "heartbeat" every 30 seconds while visible
+3. Backend awards credits: `credits = (elapsed_seconds / 60) × 10`
+4. Credits are added to user's ledger with reason `ad_view`
+5. User spends credits on AI features
+
+### API Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `POST /ads/heartbeat` | Called every 30s to earn credits |
+| `GET /ads/stats` | User's ad viewing statistics |
+| `GET /ads/config` | Credit rate configuration |
+
+## Supported AI Models
+
+### OpenAI
+- GPT-5.1 (default), GPT-5.1 Thinking, GPT-5.1 Instant, GPT-5.1 Codex, GPT-5
+
+### Anthropic
+- Claude Opus 4.5, Claude Sonnet 4.5 (default), Claude Haiku 4.5
+
+### Google
+- Gemini 3 (default), Gemini 3 Thinking, Gemini 3 Pro, Gemini 2.5 Pro/Flash
 
 ## Google AdSense Integration
 
-The extension displays Google AdSense ads in the sidebar to fund free AI credits for users.
+The extension displays Google AdSense ads in the sidebar to fund free AI credits.
+
+**AdSense Publisher ID:** `ca-pub-6034027262191917`
 
 ### How AdSense Works in the Extension
 
-1. **WebView Display**: Ads are rendered in a VS Code WebView (sidebar panel)
-2. **Script Loading**: The AdSense JavaScript loads from `pagead2.googlesyndication.com`
-3. **Ad Rendering**: Google serves contextual/display ads based on your ad unit configuration
-4. **Revenue**: You earn CPM (cost per 1000 impressions) and CPC (cost per click) revenue
-
-### Setting Up AdSense
-
-1. **Create AdSense Account**: Go to [Google AdSense](https://www.google.com/adsense) and apply
-2. **Get Approved**: Google will review your site/app (this can take days)
-3. **Create Ad Unit**:
-   - Go to AdSense Dashboard → Ads → By ad unit
-   - Create a "Display ads" unit
-   - Choose "Responsive" format (works best in narrow sidebars)
-   - Copy your Publisher ID (`ca-pub-XXXXXXXXXX`)
-   - Copy your Ad Slot ID (numeric)
-4. **Configure Extension**:
-   ```json
-   {
-     "payless-ai.adsensePublisherId": "ca-pub-1234567890123456",
-     "payless-ai.adsenseSlotId": "1234567890"
-   }
-   ```
+1. **WebView Display**: The extension embeds `payless.chat/extension`
+2. **Script Loading**: AdSense JavaScript loads from `pagead2.googlesyndication.com`
+3. **Ad Rendering**: Google serves contextual/display ads
+4. **Revenue**: CPM (impressions) and CPC (clicks) revenue
 
 ### Ad Formats for Sidebars
 
@@ -105,52 +149,31 @@ For narrow VS Code sidebars, these formats work best:
 - **Vertical Banner** (160x600) - fits tall narrow spaces
 - **Square** (250x250, 300x250) - works if sidebar is wide enough
 
-### Testing Ads
+## Web Frontend
 
-- Ads only show in production (not in development mode)
-- Use AdSense preview tool to test ad rendering
-- Never click your own ads (violates AdSense policy)
+Live at: **[payless.chat](https://payless.chat)**
 
-## Web Frontend Deployment
+- Landing page with features and pricing
+- `/extension` - Embedded in VS Code sidebar
+- `/privacy` - Privacy Policy
+- `/terms` - Terms of Service
+- `/ads.txt` - AdSense verification
 
-The `web/` directory contains a Next.js website that you need to deploy to get Google AdSense approval.
-
-### Deploy to Vercel (Recommended)
-
-1. Push your code to GitHub
-2. Go to [vercel.com](https://vercel.com) and import your repository
-3. Set the root directory to `web/`
-4. Deploy!
-
-### Deploy to Netlify
+### Deploy to Vercel
 
 ```bash
-cd web
-npm run build
-# Upload the `out/` folder to Netlify
+cd /path/to/Payless.ai
+npx vercel --prod
 ```
-
-### After Deployment
-
-1. **Get your URL**: e.g., `https://payless-ai.vercel.app`
-2. **Apply for AdSense**: Go to [google.com/adsense](https://www.google.com/adsense)
-3. **Enter your website URL** when prompted
-4. **Wait for approval**: Usually 1-14 days
-5. **Get your Publisher ID**: Format `ca-pub-XXXXXXXXXXXXXXXX`
-6. **Update the code**:
-   - In `web/src/app/layout.tsx`: Replace the AdSense script client ID
-   - In `web/src/components/AdBanner.tsx`: Replace `data-ad-client` and `data-ad-slot`
-   - In `extension/` settings: Add your Publisher ID and Slot ID
 
 ## How It Works
 
 1. Users sign in via Google OAuth through Supabase
-2. Ads displayed in the VS Code sidebar generate revenue
-3. Revenue is converted to credits and allocated to users
-4. Users spend credits to use AI features
-5. The backend calls LLM providers using its own API keys
+2. Sidebar shows ads while earning credits (10/min)
+3. Credits accumulate in user's ledger
+4. Users spend credits on AI chat features
+5. Backend calls LLM providers using its own API keys
 
 ## License
 
 MIT
-
