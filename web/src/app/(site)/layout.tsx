@@ -31,7 +31,7 @@ export default function SiteLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="scroll-smooth">
+    <html lang="en" className="scroll-smooth dark" suppressHydrationWarning>
       <head>
         <meta name="google-adsense-account" content="ca-pub-6034027262191917" />
         <script

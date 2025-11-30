@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
+import { ThemeToggle } from './ThemeToggle';
 
 export function Header() {
   const [user, setUser] = useState<User | null>(null);
@@ -58,6 +59,7 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           {loading ? (
             <div className="w-20 h-8 bg-secondary rounded-md animate-pulse" />
           ) : user ? (

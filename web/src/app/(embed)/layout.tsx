@@ -18,7 +18,7 @@ export default function EmbedLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" suppressHydrationWarning>
       <head>
         <meta name="google-adsense-account" content="ca-pub-6034027262191917" />
         <script

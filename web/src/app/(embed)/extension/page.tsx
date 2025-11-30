@@ -20,7 +20,8 @@ export default function ExtensionPage() {
   const [creditsPerMinute, setCreditsPerMinute] = useState(10);
   const [isEarning, setIsEarning] = useState(false);
   const [lastEarnTime, setLastEarnTime] = useState<number | null>(null);
-  const [isDark, setIsDark] = useState(true);
+  const [isDark] = useState(true); // Always dark in extension
+  const [adsInitialized, setAdsInitialized] = useState(false);
 
   // Handle messages from parent (VS Code extension)
   const handleMessage = useCallback((event: MessageEvent) => {
@@ -36,12 +37,6 @@ export default function ExtensionPage() {
   }, []);
 
   useEffect(() => {
-    // Load theme preference
-    const saved = localStorage.getItem('payless-theme');
-    if (saved) {
-      setIsDark(saved === 'dark');
-    }
-
     // Listen for balance updates from parent
     window.addEventListener('message', handleMessage);
 
@@ -55,17 +50,40 @@ export default function ExtensionPage() {
     };
   }, [handleMessage]);
 
+  // Initialize AdSense ads
   useEffect(() => {
-    // Initialize all ads
-    try {
-      const ads = document.querySelectorAll('.adsbygoogle');
-      ads.forEach(() => {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      });
-    } catch (e) {
-      console.error('AdSense error:', e);
+    if (adsInitialized) return;
+
+    const initAds = () => {
+      try {
+        if (typeof window !== 'undefined' && (window.adsbygoogle = window.adsbygoogle || [])) {
+          const ads = document.querySelectorAll('.adsbygoogle:not([data-adsbygoogle-status])');
+          
+          if (ads.length > 0) {
+            ads.forEach((ad) => {
+              try {
+                (window.adsbygoogle as unknown[]).push({});
+              } catch (e) {
+                console.error('Error pushing ad:', e);
+              }
+            });
+            setAdsInitialized(true);
+          }
+        }
+      } catch (e) {
+        console.error('AdSense initialization error:', e);
+      }
+    };
+
+    // Wait for AdSense script to load
+    if (window.adsbygoogle) {
+      initAds();
+    } else {
+      // Retry after a delay if script hasn't loaded
+      const timer = setTimeout(initAds, 1000);
+      return () => clearTimeout(timer);
     }
-  }, []);
+  }, [adsInitialized]);
 
   // Auto-fade earning indicator after 5 seconds of no updates
   useEffect(() => {
@@ -78,12 +96,6 @@ export default function ExtensionPage() {
       return () => clearTimeout(timeout);
     }
   }, [lastEarnTime]);
-
-  const toggleTheme = () => {
-    const newTheme = !isDark;
-    setIsDark(newTheme);
-    localStorage.setItem('payless-theme', newTheme ? 'dark' : 'light');
-  };
 
   // Format credits for display
   const formatCredits = (value: number) => {
@@ -118,15 +130,6 @@ export default function ExtensionPage() {
               <div className={`text-[10px] ${textMuted}`}>Free AI, powered by ads</div>
             </div>
           </div>
-          
-          {/* Theme Toggle */}
-          <button
-            onClick={toggleTheme}
-            className={`w-8 h-8 rounded-lg ${cardBg} ${border} border flex items-center justify-center text-sm hover:opacity-80 transition-opacity`}
-            aria-label="Toggle theme"
-          >
-            {isDark ? '☀' : '☾'}
-          </button>
         </div>
       </header>
 
@@ -190,50 +193,38 @@ export default function ExtensionPage() {
 
       {/* Ad Stack - Optimized for vertical sidebar */}
       <div className="flex-1 p-3 space-y-3 overflow-y-auto">
-        {/* Ad Unit 1 - Large Rectangle */}
-        <div className={`${cardBg} rounded-lg p-2 border ${border}`}>
+        {/* Ad Unit 1 - Responsive Display Ad */}
+        <div className={`${cardBg} rounded-lg p-2 border ${border} min-h-[250px] flex items-center justify-center`}>
           <ins
             className="adsbygoogle"
-            style={{ display: "block", minHeight: "250px" }}
+            style={{ display: "block" }}
             data-ad-client="ca-pub-6034027262191917"
-            data-ad-slot="auto"
-            data-ad-format="rectangle"
-            data-full-width-responsive="true"
-          />
-        </div>
-
-        {/* Ad Unit 2 - Vertical */}
-        <div className={`${cardBg} rounded-lg p-2 border ${border}`}>
-          <ins
-            className="adsbygoogle"
-            style={{ display: "block", minHeight: "300px" }}
-            data-ad-client="ca-pub-6034027262191917"
-            data-ad-slot="auto"
-            data-ad-format="vertical"
-            data-full-width-responsive="true"
-          />
-        </div>
-
-        {/* Ad Unit 3 - Auto */}
-        <div className={`${cardBg} rounded-lg p-2 border ${border}`}>
-          <ins
-            className="adsbygoogle"
-            style={{ display: "block", minHeight: "250px" }}
-            data-ad-client="ca-pub-6034027262191917"
-            data-ad-slot="auto"
+            data-ad-slot=""
             data-ad-format="auto"
             data-full-width-responsive="true"
           />
         </div>
 
-        {/* Ad Unit 4 - Rectangle */}
-        <div className={`${cardBg} rounded-lg p-2 border ${border}`}>
+        {/* Ad Unit 2 - Responsive Display Ad */}
+        <div className={`${cardBg} rounded-lg p-2 border ${border} min-h-[300px] flex items-center justify-center`}>
           <ins
             className="adsbygoogle"
-            style={{ display: "block", minHeight: "250px" }}
+            style={{ display: "block" }}
             data-ad-client="ca-pub-6034027262191917"
-            data-ad-slot="auto"
-            data-ad-format="rectangle"
+            data-ad-slot=""
+            data-ad-format="auto"
+            data-full-width-responsive="true"
+          />
+        </div>
+
+        {/* Ad Unit 3 - Responsive Display Ad */}
+        <div className={`${cardBg} rounded-lg p-2 border ${border} min-h-[250px] flex items-center justify-center`}>
+          <ins
+            className="adsbygoogle"
+            style={{ display: "block" }}
+            data-ad-client="ca-pub-6034027262191917"
+            data-ad-slot=""
+            data-ad-format="auto"
             data-full-width-responsive="true"
           />
         </div>
