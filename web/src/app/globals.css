@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -44,56 +43,46 @@
 }
 
 :root {
-  --radius: 0.75rem;
-  --background: oklch(0.98 0.005 270);
-  --foreground: oklch(0.15 0.02 270);
+  --radius: 0.5rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.1 0 0);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.15 0.02 270);
+  --card-foreground: oklch(0.1 0 0);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.15 0.02 270);
-  --primary: oklch(0.55 0.25 270);
-  --primary-foreground: oklch(0.98 0 0);
-  --secondary: oklch(0.95 0.02 270);
-  --secondary-foreground: oklch(0.25 0.05 270);
-  --muted: oklch(0.95 0.01 270);
-  --muted-foreground: oklch(0.5 0.02 270);
-  --accent: oklch(0.92 0.05 270);
-  --accent-foreground: oklch(0.25 0.05 270);
-  --destructive: oklch(0.6 0.25 25);
-  --border: oklch(0.9 0.02 270);
-  --input: oklch(0.9 0.02 270);
-  --ring: oklch(0.55 0.25 270);
-  --chart-1: oklch(0.55 0.25 270);
-  --chart-2: oklch(0.65 0.2 200);
-  --chart-3: oklch(0.7 0.15 150);
-  --chart-4: oklch(0.75 0.2 60);
-  --chart-5: oklch(0.6 0.25 330);
+  --popover-foreground: oklch(0.1 0 0);
+  --primary: oklch(0.1 0 0);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.96 0 0);
+  --secondary-foreground: oklch(0.1 0 0);
+  --muted: oklch(0.96 0 0);
+  --muted-foreground: oklch(0.4 0 0);
+  --accent: oklch(0.96 0 0);
+  --accent-foreground: oklch(0.1 0 0);
+  --destructive: oklch(0.4 0.15 25);
+  --border: oklch(0.92 0 0);
+  --input: oklch(0.92 0 0);
+  --ring: oklch(0.1 0 0);
 }
 
 .dark {
-  --background: oklch(0.12 0.02 270);
-  --foreground: oklch(0.95 0.01 270);
-  --card: oklch(0.16 0.025 270);
-  --card-foreground: oklch(0.95 0.01 270);
-  --popover: oklch(0.16 0.025 270);
-  --popover-foreground: oklch(0.95 0.01 270);
-  --primary: oklch(0.65 0.25 270);
-  --primary-foreground: oklch(0.1 0.02 270);
-  --secondary: oklch(0.22 0.03 270);
-  --secondary-foreground: oklch(0.9 0.01 270);
-  --muted: oklch(0.22 0.02 270);
-  --muted-foreground: oklch(0.65 0.02 270);
-  --accent: oklch(0.25 0.05 270);
-  --accent-foreground: oklch(0.9 0.01 270);
-  --destructive: oklch(0.65 0.25 25);
-  --border: oklch(0.25 0.03 270);
-  --input: oklch(0.25 0.03 270);
-  --ring: oklch(0.65 0.25 270);
-  --chart-1: oklch(0.65 0.25 270);
-  --chart-2: oklch(0.7 0.2 200);
-  --chart-3: oklch(0.75 0.15 150);
-  --chart-4: oklch(0.8 0.2 60);
-  --chart-5: oklch(0.65 0.25 330);
+  --background: oklch(0.05 0 0);
+  --foreground: oklch(0.98 0 0);
+  --card: oklch(0.08 0 0);
+  --card-foreground: oklch(0.98 0 0);
+  --popover: oklch(0.08 0 0);
+  --popover-foreground: oklch(0.98 0 0);
+  --primary: oklch(0.98 0 0);
+  --primary-foreground: oklch(0.05 0 0);
+  --secondary: oklch(0.12 0 0);
+  --secondary-foreground: oklch(0.98 0 0);
+  --muted: oklch(0.12 0 0);
+  --muted-foreground: oklch(0.6 0 0);
+  --accent: oklch(0.12 0 0);
+  --accent-foreground: oklch(0.98 0 0);
+  --destructive: oklch(0.5 0.2 25);
+  --border: oklch(0.15 0 0);
+  --input: oklch(0.15 0 0);
+  --ring: oklch(0.8 0 0);
 }
 
 @layer base {
@@ -103,58 +92,4 @@
   body {
     @apply bg-background text-foreground;
   }
-}
-
-/* Custom animations */
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-}
-
-@keyframes glow {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
-}
-
-@keyframes gradient {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-.animate-glow {
-  animation: glow 3s ease-in-out infinite;
-}
-
-.animate-gradient {
-  background-size: 200% 200%;
-  animation: gradient 8s ease infinite;
-}
-
-/* Gradient text */
-.gradient-text {
-  background: linear-gradient(135deg, oklch(0.65 0.25 270) 0%, oklch(0.7 0.2 300) 50%, oklch(0.65 0.25 240) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Hero gradient background */
-.hero-gradient {
-  background: 
-    radial-gradient(ellipse 80% 50% at 50% -20%, oklch(0.5 0.2 270 / 0.3), transparent),
-    radial-gradient(ellipse 60% 40% at 80% 60%, oklch(0.5 0.15 300 / 0.2), transparent),
-    radial-gradient(ellipse 50% 30% at 20% 80%, oklch(0.5 0.15 240 / 0.15), transparent);
-}
-
-/* Grid pattern background */
-.grid-pattern {
-  background-image: 
-    linear-gradient(oklch(0.5 0.1 270 / 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, oklch(0.5 0.1 270 / 0.03) 1px, transparent 1px);
-  background-size: 60px 60px;
 }
