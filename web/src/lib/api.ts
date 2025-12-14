@@ -1,5 +1,4 @@
-// API client for backend communication
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
+// API client for frontend - uses Next.js API routes directly
 
 export async function getApiToken(): Promise<string | null> {
   // Get Supabase session token
@@ -26,7 +25,8 @@ async function apiRequest<T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${BACKEND_URL}${endpoint}`, {
+  // Use Next.js API routes (relative path)
+  const response = await fetch(`/api${endpoint}`, {
     ...options,
     headers,
   });
@@ -58,11 +58,11 @@ export const api = {
   },
 
   async getAdStats(): Promise<AdStatsResponse> {
-    return apiRequest<AdStatsResponse>('/ads/stats');
+    // Use credits/balance route which returns all needed stats
+    return apiRequest<AdStatsResponse>('/credits/balance');
   },
 
   async getMe() {
-    return apiRequest('/me');
+    return apiRequest('/credits/balance');
   },
 };
-
