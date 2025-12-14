@@ -8,14 +8,13 @@ type SortOption = 'score' | 'points' | 'conversion' | 'time';
 const CPX_SCRIPT_ID = 'cpx-research-script';
 const CPX_SCRIPT_URL = 'https://cdn.cpx-research.com/assets/js/script_tag_v2.0.js';
 
-type SortOption = 'score' | 'points' | 'conversion' | 'time';
-
 export default function ExtensionPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [secureHash, setSecureHash] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortOption, setSortOption] = useState<SortOption>('points');
+  const [configKey, setConfigKey] = useState(0); // Force widget recreation on change
 
   useEffect(() => {
     const initUser = async () => {
@@ -122,22 +121,18 @@ export default function ExtensionPage() {
       existingScript.remove();
     }
 
-    // Clear the container
-    const container = document.getElementById('cpx-surveys');
-    if (container) {
-      container.innerHTML = '';
-    }
+    // Don't manually clear innerHTML - let React handle via key prop on container
 
     // Set config before loading script
     (window as unknown as Record<string, unknown>).config = createConfig(sortOption);
 
-    // Create and add new script
+    // Create and add new script with cache-busting to force fresh load
     const script = document.createElement('script');
     script.id = CPX_SCRIPT_ID;
-    script.src = CPX_SCRIPT_URL;
+    script.src = `${CPX_SCRIPT_URL}?t=${Date.now()}`; // Cache-busting
     script.async = true;
     script.onload = () => {
-      console.log('CPX script loaded');
+      console.log('CPX script loaded with sort:', sortOption);
     };
     script.onerror = () => {
       console.error('Failed to load CPX script');
@@ -145,62 +140,9 @@ export default function ExtensionPage() {
     document.body.appendChild(script);
   }, [createConfig, sortOption]);
 
-  // Initial script load when user data is ready
+  // Load script when user data is ready or when configKey changes (sort change)
   useEffect(() => {
     if (!userId || !secureHash) return;
-
-    const appId = process.env.NEXT_PUBLIC_CPX_APP_ID || '30452';
-
-    // CPX script configuration
-    const script1 = {
-      div_id: "cpx-surveys",
-      theme_style: 2, // sidebar style
-      order_by: getOrderBy(sortOption),
-      limit_surveys: 50 // Increased from 10 to show more surveys
-    };
-
-    const config = {
-      general_config: {
-        app_id: parseInt(appId, 10),
-        ext_user_id: userId,
-        email: "",
-        username: "",
-        secure_hash: secureHash,
-        subid_1: "",
-        subid_2: "",
-      },
-      style_config: {
-        text_color: "#ffffff",
-        survey_box: {
-          topbar_background_color: "#22c55e",
-          box_background_color: "#1a1a1a",
-          rounded_borders: true,
-          stars_filled: "#ffaf20",
-        },
-      },
-      script_config: [script1],
-      debug: false,
-      useIFrame: true,
-      iFramePosition: 1,
-      functions: {
-        no_surveys_available: () => {
-          console.log("No CPX surveys available");
-        },
-        count_new_surveys: (count: number) => {
-          console.log("CPX surveys count:", count);
-        },
-        get_all_surveys: (surveys: unknown[]) => {
-          console.log("CPX surveys:", surveys);
-        },
-        get_transaction: (transactions: unknown[]) => {
-          console.log("CPX transactions:", transactions);
-        }
-      }
-    };
-
-    // Set config on window for CPX script
-    (window as unknown as { config: typeof config }).config = config;
-  }, [userId, secureHash]);
     
     loadCpxScript();
     
@@ -211,34 +153,13 @@ export default function ExtensionPage() {
         script.remove();
       }
     };
-  }, [userId, secureHash]); // Only run on initial load, not on sort change
+  }, [userId, secureHash, configKey, loadCpxScript]);
 
-  // Handle sort change - reload the CPX widget
+  // Handle sort change - update state and trigger reload via useEffect
   const handleSortChange = useCallback((newSort: SortOption) => {
     setSortOption(newSort);
-    
-    // Update config
-    (window as unknown as Record<string, unknown>).config = createConfig(newSort);
-    
-    // Remove and reload the script to force reinitialization
-    const existingScript = document.getElementById(CPX_SCRIPT_ID);
-    if (existingScript) {
-      existingScript.remove();
-    }
-
-    // Clear the container
-    const container = document.getElementById('cpx-surveys');
-    if (container) {
-      container.innerHTML = '';
-    }
-
-    // Add script again with fresh config
-    const script = document.createElement('script');
-    script.id = CPX_SCRIPT_ID;
-    script.src = CPX_SCRIPT_URL;
-    script.async = true;
-    document.body.appendChild(script);
-  }, [createConfig]);
+    setConfigKey(prev => prev + 1); // Triggers useEffect to reload the widget
+  }, []);
 
   if (loading) {
     return (
@@ -267,7 +188,7 @@ export default function ExtensionPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col font-sans">
       {/* Header */}
-      <header className="p-3 border-b border-white/10 flex-shrink-0">
+      <header className="p-3 border-b border-white/10 shrink-0">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-white text-black flex items-center justify-center font-bold text-sm">
             P
@@ -301,14 +222,14 @@ export default function ExtensionPage() {
         
         {/* CPX surveys will render here */}
         <div 
-          key={configKey}
+          key={`cpx-container-${configKey}`}
           id="cpx-surveys" 
           style={{ minHeight: '500px', width: '100%' }}
         />
       </div>
 
       {/* Footer */}
-      <footer className="p-3 border-t border-white/10 flex-shrink-0">
+      <footer className="p-3 border-t border-white/10 shrink-0">
         <div className="text-center">
           <div className="text-[10px] text-neutral-400 mb-2">
             Complete surveys to earn free AI credits
@@ -323,14 +244,6 @@ export default function ExtensionPage() {
         </div>
       </footer>
 
-      {/* CPX Research Script */}
-      {userId && secureHash && (
-        <Script 
-          key={`cpx-script-${configKey}`}
-          src="https://cdn.cpx-research.com/assets/js/script_tag_v2.0.js"
-          strategy="afterInteractive"
-        />
-      )}
       {/* CPX Research Script is loaded dynamically via useEffect */}
     </div>
   );
