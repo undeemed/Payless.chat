@@ -34,16 +34,15 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const trans_id = searchParams.get('trans_id');
     const user_id = searchParams.get('user_id');
-    const amount_local = searchParams.get('amount_local'); // Points from CPX (uses Currency Factor)
     const amount_usd = searchParams.get('amount_usd');
     const offer_id = searchParams.get('offer_id');
     const hash = searchParams.get('hash');
 
-    console.log('CPX postback received:', { status, trans_id, user_id, amount_local, amount_usd, offer_id });
+    console.log('CPX postback received:', { status, trans_id, user_id, amount_usd, offer_id });
 
     // Validate required parameters
-    if (!user_id || !trans_id || !status || !amount_local || !hash) {
-      console.warn('CPX postback missing params:', { user_id, trans_id, status, amount_local, hash });
+    if (!user_id || !trans_id || !status || !amount_usd || !hash) {
+      console.warn('CPX postback missing params:', { user_id, trans_id, status, amount_usd, hash });
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
@@ -65,8 +64,7 @@ export async function GET(request: NextRequest) {
     }
 
     const statusCode = parseInt(status, 10);
-    // Use amount_local directly - CPX already calculated points using Currency Factor
-    const creditsEarned = Math.floor(parseFloat(amount_local));
+    const payoutUsd = parseFloat(amount_usd);
     const supabase = getSupabase();
 
     // Check if this transaction has already been processed (deduplication)
@@ -84,13 +82,15 @@ export async function GET(request: NextRequest) {
 
     if (statusCode === 1) {
       // Survey completed - credit the user
+      const creditsEarned = Math.floor(payoutUsd * CPX_CREDITS_PER_DOLLAR);
+      
       const { error } = await supabase
         .from('credit_ledger')
         .insert({
           user_id: user_id,
           delta: creditsEarned,
           reason: 'survey_complete',
-          description: `CPX Survey ${offer_id || 'unknown'} (Trans: ${trans_id}, ${creditsEarned} pts, $${amount_usd || '?'})`,
+          description: `CPX Survey ${offer_id || 'unknown'} (Trans: ${trans_id}, $${payoutUsd})`,
         });
 
       if (error) {
@@ -102,14 +102,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ status: 'ok', credits_awarded: creditsEarned });
       
     } else if (statusCode === 2) {
-      // Survey reversed - deduct credits (use same amount_local value)
+      // Survey reversed - deduct credits
+      const creditsToDeduct = Math.floor(payoutUsd * CPX_CREDITS_PER_DOLLAR);
+      
       const { error } = await supabase
         .from('credit_ledger')
         .insert({
           user_id: user_id,
-          delta: -creditsEarned,
+          delta: -creditsToDeduct,
           reason: 'adjust',
-          description: `CPX Survey reversed (Trans: ${trans_id}, -${creditsEarned} pts)`,
+          description: `CPX Survey reversed (Trans: ${trans_id})`,
         });
 
       if (error) {
@@ -117,8 +119,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Database error' }, { status: 500 });
       }
 
-      console.log(`CPX postback REVERSED: User ${user_id} lost ${creditsEarned} credits`);
-      return NextResponse.json({ status: 'ok', credits_reversed: creditsEarned });
+      console.log(`CPX postback REVERSED: User ${user_id} lost ${creditsToDeduct} credits`);
+      return NextResponse.json({ status: 'ok', credits_reversed: creditsToDeduct });
       
     } else {
       return NextResponse.json({ error: 'Unknown status code' }, { status: 400 });
