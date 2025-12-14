@@ -8,6 +8,7 @@ import creditRoutes from './routes/credits.js';
 import llmRoutes from './routes/llm.js';
 import adminRoutes from './routes/admin.js';
 import adsRoutes from './routes/ads.js';
+import cpxRoutes from './routes/cpx.js';
 
 // Load environment variables
 dotenv.config();
@@ -30,6 +31,7 @@ app.use('/credits', creditRoutes);
 app.use('/llm', llmRoutes);
 app.use('/admin', adminRoutes);
 app.use('/ads', adsRoutes);
+app.use('/cpx', cpxRoutes);
 
 // Error handling
 app.use(errorHandler);

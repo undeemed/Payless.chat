@@ -1,54 +1,73 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
+
+interface Survey {
+  id: string;
+  lengthMinutes: number;
+  payoutUsd: number;
+  creditsReward: number;
+  conversionRate: number;
+  href: string;
+  type: string;
+  rating: number | null;
+  ratingCount: number;
+}
 
 interface AdBannerProps {
   variant?: "default" | "large" | "sidebar";
   className?: string;
 }
 
-declare global {
-  interface Window {
-    adsbygoogle: unknown[];
-  }
-}
-
 export function AdBanner({ variant = "default", className = "" }: AdBannerProps) {
-  const adRef = useRef<HTMLModElement>(null);
-  const isLoaded = useRef(false);
+  const [surveys, setSurveys] = useState<Survey[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Only load ad once
-    if (isLoaded.current) return;
-    isLoaded.current = true;
+    const fetchSurveys = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem('payless_token');
+        
+        if (!token) {
+          setError('Sign in to view surveys');
+          setLoading(false);
+          return;
+        }
 
-    try {
-      // Push ad to adsbygoogle
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-    } catch (error) {
-      console.error("AdSense error:", error);
-    }
-  }, []);
+        const response = await fetch('/api/cpx/surveys', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
 
-  const getAdStyle = () => {
+        if (!response.ok) {
+          setError('Surveys unavailable');
+          setLoading(false);
+          return;
+        }
+
+        const data = await response.json();
+        // Limit surveys based on variant
+        const limit = variant === 'sidebar' ? 5 : variant === 'large' ? 3 : 2;
+        setSurveys(data.surveys.slice(0, limit));
+      } catch {
+        setError('Failed to load');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSurveys();
+  }, [variant]);
+
+  const getContainerStyle = () => {
     switch (variant) {
       case "large":
-        return { display: "block", minHeight: "280px" };
+        return "min-h-[280px]";
       case "sidebar":
-        return { display: "block", minHeight: "600px" };
+        return "min-h-[400px]";
       default:
-        return { display: "block", minHeight: "90px" };
-    }
-  };
-
-  const getAdFormat = () => {
-    switch (variant) {
-      case "large":
-        return "rectangle"; // 336x280 or responsive
-      case "sidebar":
-        return "vertical"; // 160x600 or responsive
-      default:
-        return "horizontal"; // 728x90 or responsive
+        return "min-h-[120px]";
     }
   };
 
@@ -57,39 +76,54 @@ export function AdBanner({ variant = "default", className = "" }: AdBannerProps)
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-center">
           <div className="w-full max-w-4xl">
-            {/* Ad label */}
+            {/* Survey label */}
             <div className="text-[10px] text-muted-foreground/60 uppercase tracking-wider text-center mb-2">
-              Advertisement
+              Earn Credits with Surveys
             </div>
             
-            {/* AdSense container */}
-            <div className="relative bg-card/50 rounded-lg overflow-hidden border border-border/30">
-              {/* 
-                Replace data-ad-client and data-ad-slot with your actual AdSense values
-                data-ad-client: Your publisher ID (ca-pub-XXXXXXXXXXXXXXXX)
-                data-ad-slot: Your ad unit ID
-              */}
-              <ins
-                ref={adRef}
-                className="adsbygoogle"
-                style={getAdStyle()}
-                data-ad-client="ca-pub-6034027262191917"
-                data-ad-slot="XXXXXXXXXX"
-                data-ad-format={getAdFormat()}
-                data-full-width-responsive="true"
-              />
-              
-              {/* Placeholder shown before ad loads */}
-              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-muted/50 to-muted/30 pointer-events-none">
-                <div className="text-center text-muted-foreground/50">
-                  <svg className="w-8 h-8 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <rect x="3" y="3" width="18" height="18" rx="2" strokeWidth={1.5} />
-                    <circle cx="8.5" cy="8.5" r="1.5" strokeWidth={1.5} />
-                    <path d="M21 15l-5-5L5 21" strokeWidth={1.5} />
-                  </svg>
-                  <span className="text-xs">Ad Space</span>
+            {/* Survey container */}
+            <div className={`relative bg-card/50 rounded-lg overflow-hidden border border-border/30 ${getContainerStyle()}`}>
+              {loading ? (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-muted-foreground/50 text-sm">Loading surveys...</div>
                 </div>
-              </div>
+              ) : error ? (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-muted-foreground/50 text-sm">{error}</div>
+                </div>
+              ) : surveys.length === 0 ? (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center text-muted-foreground/50">
+                    <svg className="w-8 h-8 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <span className="text-xs">No surveys available</span>
+                  </div>
+                </div>
+              ) : (
+                <div className={`p-3 space-y-2 ${variant === 'sidebar' ? 'flex flex-col' : 'flex gap-3 overflow-x-auto'}`}>
+                  {surveys.map((survey) => (
+                    <a
+                      key={survey.id}
+                      href={survey.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-shrink-0 bg-card hover:bg-card/80 rounded-lg p-3 border border-border/50 transition-colors min-w-[200px]"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <div className="text-sm font-medium">Survey</div>
+                          <div className="text-xs text-muted-foreground">{survey.lengthMinutes} min</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-green-500 font-bold">+{survey.creditsReward}</div>
+                          <div className="text-[10px] text-muted-foreground">credits</div>
+                        </div>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Funding note */}
@@ -98,7 +132,7 @@ export function AdBanner({ variant = "default", className = "" }: AdBannerProps)
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                 <path d="M9 12l2 2 4-4" />
               </svg>
-              <span>Ads help keep Payless AI free for everyone</span>
+              <span>Surveys help keep Payless AI free for everyone</span>
             </div>
           </div>
         </div>
@@ -106,4 +140,3 @@ export function AdBanner({ variant = "default", className = "" }: AdBannerProps)
     </div>
   );
 }
-
