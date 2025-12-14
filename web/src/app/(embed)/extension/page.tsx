@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { createClient } from "@/lib/supabase";
 
 interface Survey {
   id: string;
@@ -64,10 +65,11 @@ export default function ExtensionPage() {
         setLoading(true);
         setError(null);
         
-        // Get auth token from parent or storage
-        const token = localStorage.getItem('payless_token');
+        // Get auth token from Supabase session
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
         
-        if (!token) {
+        if (!session?.access_token) {
           setError('Please sign in to view surveys');
           setLoading(false);
           return;
@@ -75,7 +77,7 @@ export default function ExtensionPage() {
 
         const response = await fetch('/api/cpx/surveys', {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${session.access_token}`,
           },
         });
 
