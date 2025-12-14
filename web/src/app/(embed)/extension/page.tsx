@@ -65,7 +65,74 @@ export default function ExtensionPage() {
   // Handle sort change - need to reinitialize the CPX widget
   const handleSortChange = (newSort: SortOption) => {
     setSortOption(newSort);
-    setConfigKey(prev => prev + 1); // Force re-render of CPX widget
+    
+    // Clear the surveys container
+    const container = document.getElementById('cpx-surveys');
+    if (container) {
+      container.innerHTML = '';
+    }
+    
+    // Update config and reinitialize CPX
+    const appId = process.env.NEXT_PUBLIC_CPX_APP_ID || '30452';
+    const script1 = {
+      div_id: "cpx-surveys",
+      theme_style: 2,
+      order_by: getOrderBy(newSort),
+      limit_surveys: 50
+    };
+
+    const config = {
+      general_config: {
+        app_id: parseInt(appId, 10),
+        ext_user_id: userId,
+        email: "",
+        username: "",
+        secure_hash: secureHash,
+        subid_1: "",
+        subid_2: "",
+      },
+      style_config: {
+        text_color: "#ffffff",
+        survey_box: {
+          topbar_background_color: "#22c55e",
+          box_background_color: "#1a1a1a",
+          rounded_borders: true,
+          stars_filled: "#ffaf20",
+        },
+      },
+      script_config: [script1],
+      debug: false,
+      useIFrame: true,
+      iFramePosition: 1,
+      functions: {
+        no_surveys_available: () => {
+          console.log("No CPX surveys available");
+        },
+        count_new_surveys: (count: number) => {
+          console.log("CPX surveys count:", count);
+        },
+        get_all_surveys: (surveys: unknown[]) => {
+          console.log("CPX surveys:", surveys);
+        },
+        get_transaction: (transactions: unknown[]) => {
+          console.log("CPX transactions:", transactions);
+        }
+      }
+    };
+
+    // Update window config
+    (window as unknown as { config: typeof config }).config = config;
+    
+    // Try to reinitialize CPX - it exposes a global CPX object
+    const win = window as unknown as { CPX?: { reload?: () => void; init?: () => void } };
+    if (win.CPX?.reload) {
+      win.CPX.reload();
+    } else if (win.CPX?.init) {
+      win.CPX.init();
+    } else {
+      // Fallback: force reload the script by updating key
+      setConfigKey(prev => prev + 1);
+    }
   };
 
   // Set up CPX config when we have user data

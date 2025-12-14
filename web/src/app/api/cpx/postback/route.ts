@@ -67,6 +67,19 @@ export async function GET(request: NextRequest) {
     const payoutUsd = parseFloat(amount_usd);
     const supabase = getSupabase();
 
+    // Check if this transaction has already been processed (deduplication)
+    const { data: existingEntry } = await supabase
+      .from('credit_ledger')
+      .select('id')
+      .ilike('description', `%Trans: ${trans_id}%`)
+      .limit(1)
+      .single();
+
+    if (existingEntry) {
+      console.log(`CPX postback DUPLICATE: Transaction ${trans_id} already processed, skipping`);
+      return NextResponse.json({ status: 'ok', message: 'Transaction already processed' });
+    }
+
     if (statusCode === 1) {
       // Survey completed - credit the user
       const creditsEarned = Math.floor(payoutUsd * CPX_CREDITS_PER_DOLLAR);
