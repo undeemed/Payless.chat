@@ -1,14 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase";
-import Script from "next/script";
+
+type SortOption = 'score' | 'points' | 'conversion' | 'time';
+
+const CPX_SCRIPT_ID = 'cpx-research-script';
+const CPX_SCRIPT_URL = 'https://cdn.cpx-research.com/assets/js/script_tag_v2.0.js';
 
 export default function ExtensionPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [secureHash, setSecureHash] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sortOption, setSortOption] = useState<SortOption>('points');
 
   useEffect(() => {
     const initUser = async () => {
@@ -47,7 +52,98 @@ export default function ExtensionPage() {
     initUser();
   }, []);
 
-  // Set up CPX config when we have user data
+  // Map sort option to CPX order_by value
+  const getOrderBy = useCallback((sort: SortOption): number => {
+    switch (sort) {
+      case 'score': return 1; // best score
+      case 'points': return 2; // best money/payout
+      case 'conversion': return 3; // best conversion rate
+      case 'time': return 1; // use score, but CPX orders by LOI internally
+      default: return 2;
+    }
+  }, []);
+
+  // Create CPX config object
+  const createConfig = useCallback((sort: SortOption) => {
+    const appId = process.env.NEXT_PUBLIC_CPX_APP_ID || '30452';
+    
+    return {
+      general_config: {
+        app_id: parseInt(appId, 10),
+        ext_user_id: userId,
+        email: "",
+        username: "",
+        secure_hash: secureHash,
+        subid_1: "",
+        subid_2: "",
+      },
+      style_config: {
+        text_color: "#ffffff",
+        survey_box: {
+          topbar_background_color: "#22c55e",
+          box_background_color: "#1a1a1a",
+          rounded_borders: true,
+          stars_filled: "#ffaf20",
+        },
+      },
+      script_config: [{
+        div_id: "cpx-surveys",
+        theme_style: 2,
+        order_by: getOrderBy(sort),
+        limit_surveys: 50
+      }],
+      debug: false,
+      useIFrame: true,
+      iFramePosition: 1,
+      functions: {
+        no_surveys_available: () => {
+          console.log("No CPX surveys available");
+        },
+        count_new_surveys: (count: number) => {
+          console.log("CPX surveys count:", count);
+        },
+        get_all_surveys: (surveys: unknown[]) => {
+          console.log("CPX surveys:", surveys);
+        },
+        get_transaction: (transactions: unknown[]) => {
+          console.log("CPX transactions:", transactions);
+        }
+      }
+    };
+  }, [userId, secureHash, getOrderBy]);
+
+  // Load CPX script dynamically
+  const loadCpxScript = useCallback(() => {
+    // Remove existing script if any
+    const existingScript = document.getElementById(CPX_SCRIPT_ID);
+    if (existingScript) {
+      existingScript.remove();
+    }
+
+    // Clear the container
+    const container = document.getElementById('cpx-surveys');
+    if (container) {
+      container.innerHTML = '';
+    }
+
+    // Set config before loading script
+    (window as unknown as Record<string, unknown>).config = createConfig(sortOption);
+
+    // Create and add new script
+    const script = document.createElement('script');
+    script.id = CPX_SCRIPT_ID;
+    script.src = CPX_SCRIPT_URL;
+    script.async = true;
+    script.onload = () => {
+      console.log('CPX script loaded');
+    };
+    script.onerror = () => {
+      console.error('Failed to load CPX script');
+    };
+    document.body.appendChild(script);
+  }, [createConfig, sortOption]);
+
+  // Initial script load when user data is ready
   useEffect(() => {
     if (!userId || !secureHash) return;
 
@@ -103,6 +199,44 @@ export default function ExtensionPage() {
     // Set config on window for CPX script
     (window as unknown as { config: typeof config }).config = config;
   }, [userId, secureHash]);
+    
+    loadCpxScript();
+    
+    // Cleanup on unmount
+    return () => {
+      const script = document.getElementById(CPX_SCRIPT_ID);
+      if (script) {
+        script.remove();
+      }
+    };
+  }, [userId, secureHash]); // Only run on initial load, not on sort change
+
+  // Handle sort change - reload the CPX widget
+  const handleSortChange = useCallback((newSort: SortOption) => {
+    setSortOption(newSort);
+    
+    // Update config
+    (window as unknown as Record<string, unknown>).config = createConfig(newSort);
+    
+    // Remove and reload the script to force reinitialization
+    const existingScript = document.getElementById(CPX_SCRIPT_ID);
+    if (existingScript) {
+      existingScript.remove();
+    }
+
+    // Clear the container
+    const container = document.getElementById('cpx-surveys');
+    if (container) {
+      container.innerHTML = '';
+    }
+
+    // Add script again with fresh config
+    const script = document.createElement('script');
+    script.id = CPX_SCRIPT_ID;
+    script.src = CPX_SCRIPT_URL;
+    script.async = true;
+    document.body.appendChild(script);
+  }, [createConfig]);
 
   if (loading) {
     return (
@@ -179,6 +313,7 @@ export default function ExtensionPage() {
           strategy="afterInteractive"
         />
       )}
+      {/* CPX Research Script is loaded dynamically via useEffect */}
     </div>
   );
 }
