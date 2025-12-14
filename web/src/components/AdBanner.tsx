@@ -1,18 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-interface Survey {
-  id: string;
-  lengthMinutes: number;
-  payoutUsd: number;
-  creditsReward: number;
-  conversionRate: number;
-  href: string;
-  type: string;
-  rating: number | null;
-  ratingCount: number;
-}
+import { createClient } from "@/lib/supabase";
+import Script from "next/script";
 
 interface AdBannerProps {
   variant?: "default" | "large" | "sidebar";
@@ -20,45 +10,97 @@ interface AdBannerProps {
 }
 
 export function AdBanner({ variant = "default", className = "" }: AdBannerProps) {
-  const [surveys, setSurveys] = useState<Survey[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [secureHash, setSecureHash] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [configReady, setConfigReady] = useState(false);
+
+  const divId = `cpx-banner-${variant}`;
 
   useEffect(() => {
-    const fetchSurveys = async () => {
+    const initUser = async () => {
       try {
-        setLoading(true);
-        const token = localStorage.getItem('payless_token');
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
         
-        if (!token) {
+        if (!session?.user) {
           setError('Sign in to view surveys');
           setLoading(false);
           return;
         }
 
-        const response = await fetch('/api/cpx/surveys', {
-          headers: { 'Authorization': `Bearer ${token}` },
+        setUserId(session.user.id);
+
+        // Get secure hash from API
+        const response = await fetch('/api/cpx/hash', {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
         });
 
-        if (!response.ok) {
-          setError('Surveys unavailable');
-          setLoading(false);
-          return;
+        if (response.ok) {
+          const data = await response.json();
+          setSecureHash(data.secure_hash);
         }
 
-        const data = await response.json();
-        // Limit surveys based on variant
-        const limit = variant === 'sidebar' ? 5 : variant === 'large' ? 3 : 2;
-        setSurveys(data.surveys.slice(0, limit));
-      } catch {
+        setLoading(false);
+      } catch (err) {
+        console.error('Failed to initialize:', err);
         setError('Failed to load');
-      } finally {
         setLoading(false);
       }
     };
 
-    fetchSurveys();
-  }, [variant]);
+    initUser();
+  }, []);
+
+  // Set up CPX config when we have user data
+  useEffect(() => {
+    if (!userId || !secureHash) return;
+
+    const appId = process.env.NEXT_PUBLIC_CPX_APP_ID || '30452';
+
+    // Theme style based on variant
+    const themeStyle = variant === 'sidebar' ? 2 : 1;
+    const limitSurveys = variant === 'sidebar' ? 5 : variant === 'large' ? 3 : 2;
+
+    const script1 = {
+      div_id: divId,
+      theme_style: themeStyle,
+      order_by: 2,
+      limit_surveys: limitSurveys
+    };
+
+    const config = {
+      general_config: {
+        app_id: parseInt(appId, 10),
+        ext_user_id: userId,
+        email: "",
+        username: "",
+        secure_hash: secureHash,
+        subid_1: "",
+        subid_2: "",
+      },
+      style_config: {
+        text_color: "#ffffff",
+        survey_box: {
+          topbar_background_color: "#22c55e",
+          box_background_color: "#1a1a1a",
+          rounded_borders: true,
+          stars_filled: "#ffaf20",
+        },
+      },
+      script_config: [script1],
+      debug: false,
+      useIFrame: true,
+      iFramePosition: 1,
+    };
+
+    // Set config on window for CPX script
+    (window as unknown as { config: typeof config }).config = config;
+    setConfigReady(true);
+  }, [userId, secureHash, variant, divId]);
 
   const getContainerStyle = () => {
     switch (variant) {
@@ -91,38 +133,8 @@ export function AdBanner({ variant = "default", className = "" }: AdBannerProps)
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-muted-foreground/50 text-sm">{error}</div>
                 </div>
-              ) : surveys.length === 0 ? (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center text-muted-foreground/50">
-                    <svg className="w-8 h-8 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    <span className="text-xs">No surveys available</span>
-                  </div>
-                </div>
               ) : (
-                <div className={`p-3 space-y-2 ${variant === 'sidebar' ? 'flex flex-col' : 'flex gap-3 overflow-x-auto'}`}>
-                  {surveys.map((survey) => (
-                    <a
-                      key={survey.id}
-                      href={survey.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-shrink-0 bg-card hover:bg-card/80 rounded-lg p-3 border border-border/50 transition-colors min-w-[200px]"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div>
-                          <div className="text-sm font-medium">Survey</div>
-                          <div className="text-xs text-muted-foreground">{survey.lengthMinutes} min</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-green-500 font-bold">+{survey.creditsReward}</div>
-                          <div className="text-[10px] text-muted-foreground">credits</div>
-                        </div>
-                      </div>
-                    </a>
-                  ))}
-                </div>
+                <div id={divId} style={{ width: '100%', height: '100%' }} />
               )}
             </div>
 
@@ -137,6 +149,14 @@ export function AdBanner({ variant = "default", className = "" }: AdBannerProps)
           </div>
         </div>
       </div>
+
+      {/* CPX Research Script */}
+      {configReady && (
+        <Script 
+          src="https://cdn.cpx-research.com/assets/js/script_tag_v2.0.js"
+          strategy="afterInteractive"
+        />
+      )}
     </div>
   );
 }
