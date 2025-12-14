@@ -91,16 +91,6 @@
           "default": "",
           "description": "Supabase project URL for authentication"
         },
-        "payless-ai.adsensePublisherId": {
-          "type": "string",
-          "default": "",
-          "description": "Google AdSense Publisher ID (e.g., ca-pub-1234567890)"
-        },
-        "payless-ai.adsenseSlotId": {
-          "type": "string",
-          "default": "",
-          "description": "Google AdSense Ad Slot ID for the sidebar"
-        },
         "payless-ai.extensionPageUrl": {
           "type": "string",
           "default": "https://payless.chat/extension",

@@ -42,10 +42,10 @@ export default function PrivacyPage() {
                 <li>Selected AI providers and models</li>
               </ul>
 
-              <h3 className="text-lg font-medium mt-4 mb-2">Advertising Data</h3>
+              <h3 className="text-lg font-medium mt-4 mb-2">Survey Data</h3>
               <p className="text-muted-foreground leading-relaxed">
-                We use Google AdSense to display advertisements. Google may collect certain information 
-                to serve personalized ads. You can opt out of personalized ads in your Google Ad Settings.
+                We use CPX Research to offer paid surveys. When you complete surveys, CPX Research collects 
+                information to match you with relevant surveys and process payments. Survey participation is optional..
               </p>
             </section>
 
@@ -80,7 +80,7 @@ export default function PrivacyPage() {
               </p>
               <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4 mt-2">
                 <li><strong>Supabase</strong> - Authentication and database</li>
-                <li><strong>Google AdSense</strong> - Advertising</li>
+                <li><strong>CPX Research</strong> - Survey marketplace</li>
                 <li><strong>OpenAI</strong> - AI services (GPT models)</li>
                 <li><strong>Anthropic</strong> - AI services (Claude models)</li>
                 <li><strong>Google AI</strong> - AI services (Gemini models)</li>
@@ -97,7 +97,7 @@ export default function PrivacyPage() {
               </p>
               <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mt-2">
                 <li>Essential website functionality</li>
-                <li>Google AdSense ad serving and measurement</li>
+                <li>CPX Research survey matching</li>
                 <li>Analytics (anonymous usage statistics)</li>
               </ul>
               <p className="text-muted-foreground leading-relaxed mt-2">

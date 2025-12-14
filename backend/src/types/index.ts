@@ -12,7 +12,13 @@ export interface CreditLedgerEntry {
   id: string;
   user_id: string;
   delta: number;
-  reason: 'mint' | 'allocate' | 'spend' | 'adjust' | 'ad_view';
+  reason:
+    | "mint"
+    | "allocate"
+    | "spend"
+    | "adjust"
+    | "ad_view"
+    | "survey_complete";
   description: string | null;
   created_at: string;
 }
@@ -55,7 +61,7 @@ export interface RevenueSnapshot {
 export interface ProviderUsage {
   id: string;
   user_id: string;
-  provider: 'openai' | 'anthropic' | 'gemini';
+  provider: "openai" | "anthropic" | "gemini";
   model: string;
   credits_spent: number;
   tokens_input: number | null;
@@ -77,7 +83,7 @@ export interface BalanceResponse {
 }
 
 export interface EstimateRequest {
-  provider: 'openai' | 'anthropic' | 'gemini';
+  provider: "openai" | "anthropic" | "gemini";
   model: string;
   prompt: string;
   max_tokens?: number;
@@ -90,7 +96,7 @@ export interface EstimateResponse {
 }
 
 export interface ExecuteRequest {
-  provider: 'openai' | 'anthropic' | 'gemini';
+  provider: "openai" | "anthropic" | "gemini";
   model: string;
   prompt: string;
   max_tokens?: number;
@@ -139,4 +145,3 @@ export interface AuthenticatedRequest {
     email: string;
   };
 }
-

@@ -1,6 +1,6 @@
 # Payless.ai
 
-An ad-funded AI assistant for VS Code. Get AI help without paying - ads subsidize the backend LLM service.
+A survey-funded AI assistant for VS Code. Get AI help without paying - complete surveys to earn credits that subsidize the backend LLM service.
 
 ## Architecture
 
@@ -15,7 +15,7 @@ An ad-funded AI assistant for VS Code. Get AI help without paying - ads subsidiz
 payless.ai/
 ├── backend/           # Node.js API server
 ├── extension/         # VS Code extension
-├── web/               # Next.js website (for AdSense approval)
+├── web/               # Next.js website (for CPX Research surveys)
 └── supabase/          # Database migrations
 ```
 
@@ -34,11 +34,13 @@ payless.ai/
 3. Configure Google OAuth:
 
 **Auth Callback URL:**
+
 ```
 https://bycsqbjaergjhwzbulaa.supabase.co/auth/v1/callback
 ```
 
 **Google OAuth Setup:**
+
 1. Go to [Google Cloud Console](https://console.cloud.google.com)
 2. Create a new project or select existing
 3. Enable the Google+ API
@@ -71,93 +73,94 @@ npm run compile
 
 ### Backend
 
-| Variable | Description |
-|----------|-------------|
-| `SUPABASE_URL` | `https://bycsqbjaergjhwzbulaa.supabase.co` |
-| `SUPABASE_SERVICE_KEY` | Supabase service role key |
-| `SUPABASE_JWT_SECRET` | JWT secret for token verification |
-| `OPENAI_API_KEY` | OpenAI API key |
-| `ANTHROPIC_API_KEY` | Anthropic API key |
-| `GOOGLE_AI_API_KEY` | Google AI API key |
-| `PORT` | Server port (default: 3000) |
+| Variable               | Description                                |
+| ---------------------- | ------------------------------------------ |
+| `SUPABASE_URL`         | `https://bycsqbjaergjhwzbulaa.supabase.co` |
+| `SUPABASE_SERVICE_KEY` | Supabase service role key                  |
+| `SUPABASE_JWT_SECRET`  | JWT secret for token verification          |
+| `OPENAI_API_KEY`       | OpenAI API key                             |
+| `ANTHROPIC_API_KEY`    | Anthropic API key                          |
+| `GOOGLE_AI_API_KEY`    | Google AI API key                          |
+| `PORT`                 | Server port (default: 3000)                |
 
 ### Extension Settings
 
 Configure in VS Code Settings (`Cmd+,` or `Ctrl+,`):
 
-| Setting | Description |
-|---------|-------------|
-| `payless-ai.backendUrl` | Backend API URL (default: http://localhost:3000) |
-| `payless-ai.supabaseUrl` | `https://bycsqbjaergjhwzbulaa.supabase.co` |
-| `payless-ai.extensionPageUrl` | `https://payless.chat/extension` |
+| Setting                       | Description                                      |
+| ----------------------------- | ------------------------------------------------ |
+| `payless-ai.backendUrl`       | Backend API URL (default: http://localhost:3000) |
+| `payless-ai.supabaseUrl`      | `https://bycsqbjaergjhwzbulaa.supabase.co`       |
+| `payless-ai.extensionPageUrl` | `https://payless.chat/extension`                 |
 
 ## Credit System
 
-Users earn credits by watching ads in the sidebar. The system is time-based:
+Users earn credits by completing surveys in the sidebar. The system is payout-based:
 
-| Metric | Value |
-|--------|-------|
-| Earn rate | **10 credits/minute** |
-| Per hour | ~600 credits |
-| Heartbeat interval | 30 seconds |
-| Session timeout | 60 seconds |
+| Metric         | Value           |
+| -------------- | --------------- |
+| Credits per $1 | **100 credits** |
+| Typical survey | 20-100 credits  |
+| Survey length  | 2-15 minutes    |
 
 ### How Credits Work
 
-1. User opens the extension sidebar (shows ads)
-2. Extension sends "heartbeat" every 30 seconds while visible
-3. Backend awards credits: `credits = (elapsed_seconds / 60) × 10`
-4. Credits are added to user's ledger with reason `ad_view`
+1. User opens the extension sidebar (shows available surveys)
+2. User clicks a survey and completes it via CPX Research
+3. CPX Research sends a postback to our server
+4. Credits are added to user's ledger with reason `survey_complete`
 5. User spends credits on AI features
 
 ### API Endpoints
 
-| Endpoint | Description |
-|----------|-------------|
+| Endpoint              | Description                      |
+| --------------------- | -------------------------------- |
 | `POST /ads/heartbeat` | Called every 30s to earn credits |
-| `GET /ads/stats` | User's ad viewing statistics |
-| `GET /ads/config` | Credit rate configuration |
+| `GET /ads/stats`      | User's ad viewing statistics     |
+| `GET /ads/config`     | Credit rate configuration        |
 
 ## Supported AI Models
 
 ### OpenAI
+
 - GPT-5.1 (default), GPT-5.1 Thinking, GPT-5.1 Instant, GPT-5.1 Codex, GPT-5
 
 ### Anthropic
+
 - Claude Opus 4.5, Claude Sonnet 4.5 (default), Claude Haiku 4.5
 
 ### Google
+
 - Gemini 3 (default), Gemini 3 Thinking, Gemini 3 Pro, Gemini 2.5 Pro/Flash
 
-## Google AdSense Integration
+## CPX Research Survey Integration
 
-The extension displays Google AdSense ads in the sidebar to fund free AI credits.
+The extension displays CPX Research surveys in the sidebar to fund free AI credits.
 
-**AdSense Publisher ID:** `ca-pub-6034027262191917`
-
-### How AdSense Works in the Extension
+### How Surveys Work in the Extension
 
 1. **WebView Display**: The extension embeds `payless.chat/extension`
-2. **Script Loading**: AdSense JavaScript loads from `pagead2.googlesyndication.com`
-3. **Ad Rendering**: Google serves contextual/display ads
-4. **Revenue**: CPM (impressions) and CPC (clicks) revenue
+2. **Survey List**: Frontend fetches available surveys from `/cpx/surveys`
+3. **Survey Completion**: User clicks a survey and completes it on CPX Research
+4. **Postback**: CPX sends completion data to `/cpx/postback`
+5. **Credit Award**: Backend adds credits based on survey payout
 
-### Ad Formats for Sidebars
+### API Endpoints (CPX)
 
-For narrow VS Code sidebars, these formats work best:
-- **Responsive Display Ads** (recommended) - automatically adjusts
-- **Vertical Banner** (160x600) - fits tall narrow spaces
-- **Square** (250x250, 300x250) - works if sidebar is wide enough
+| Endpoint            | Description                        |
+| ------------------- | ---------------------------------- |
+| `GET /cpx/surveys`  | Fetch available surveys for user   |
+| `GET /cpx/postback` | CPX callback when survey completed |
+| `GET /cpx/config`   | Survey configuration               |
 
 ## Web Frontend
 
 Live at: **[payless.chat](https://payless.chat)**
 
 - Landing page with features and pricing
-- `/extension` - Embedded in VS Code sidebar
+- `/extension` - Embedded in VS Code sidebar (survey list)
 - `/privacy` - Privacy Policy
 - `/terms` - Terms of Service
-- `/ads.txt` - AdSense verification
 
 ### Deploy to Vercel
 
@@ -169,10 +172,11 @@ npx vercel --prod
 ## How It Works
 
 1. Users sign in via Google OAuth through Supabase
-2. Sidebar shows ads while earning credits (10/min)
-3. Credits accumulate in user's ledger
-4. Users spend credits on AI chat features
-5. Backend calls LLM providers using its own API keys
+2. Sidebar shows available surveys from CPX Research
+3. User completes surveys to earn credits (100 credits/$1)
+4. Credits accumulate in user's ledger
+5. Users spend credits on AI chat features
+6. Backend calls LLM providers using its own API keys
 
 ## License
 

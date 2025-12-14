@@ -20,12 +20,7 @@ export default function EmbedLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <head>
-        <meta name="google-adsense-account" content="ca-pub-6034027262191917" />
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6034027262191917"
-          crossOrigin="anonymous"
-        />
+        {/* CPX Research surveys loaded via API - no external scripts needed */}
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
         {children}

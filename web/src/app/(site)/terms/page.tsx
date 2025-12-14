@@ -25,8 +25,8 @@ export default function TermsPage() {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold mb-4">2. Description of Service</h2>
               <p className="text-muted-foreground leading-relaxed">
-                Payless AI provides an ad-funded AI coding assistant for VS Code. Users earn credits 
-                through ad views, which can be spent on AI assistance from various providers including 
+                Payless AI provides a survey-funded AI coding assistant for VS Code. Users earn credits 
+                by completing surveys, which can be spent on AI assistance from various providers including 
                 OpenAI, Anthropic, and Google.
               </p>
             </section>
@@ -53,14 +53,14 @@ export default function TermsPage() {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold mb-4">5. Advertising</h2>
+              <h2 className="text-2xl font-semibold mb-4">5. Surveys</h2>
               <p className="text-muted-foreground leading-relaxed">
-                The Service displays advertisements through Google AdSense. By using the Service, you agree to:
+                The Service offers paid surveys through CPX Research. By completing surveys, you agree to:
               </p>
               <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4 mt-2">
-                <li>View non-intrusive advertisements in the VS Code sidebar and website</li>
-                <li>Not use ad-blocking software that prevents ad display</li>
-                <li>Not click on ads artificially or encourage others to do so</li>
+                <li>Provide honest and accurate responses to survey questions</li>
+                <li>Not complete surveys using automated tools or bots</li>
+                <li>Not manipulate surveys to earn credits fraudulently</li>
               </ul>
             </section>
 

@@ -2,10 +2,23 @@
 
 import { useEffect, useState, useCallback } from "react";
 
-declare global {
-  interface Window {
-    adsbygoogle: unknown[];
-  }
+interface Survey {
+  id: string;
+  lengthMinutes: number;
+  payoutUsd: number;
+  creditsReward: number;
+  conversionRate: number;
+  href: string;
+  type: string;
+  rating: number | null;
+  ratingCount: number;
+}
+
+interface SurveysResponse {
+  surveys: Survey[];
+  count: number;
+  total_available: number;
+  credits_per_dollar: number;
 }
 
 interface BalanceUpdate {
@@ -17,22 +30,16 @@ interface BalanceUpdate {
 
 export default function ExtensionPage() {
   const [credits, setCredits] = useState<number | null>(null);
-  const [creditsPerMinute, setCreditsPerMinute] = useState(10);
-  const [isEarning, setIsEarning] = useState(false);
-  const [lastEarnTime, setLastEarnTime] = useState<number | null>(null);
+  const [surveys, setSurveys] = useState<Survey[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isDark] = useState(true); // Always dark in extension
-  const [adsInitialized, setAdsInitialized] = useState(false);
 
   // Handle messages from parent (VS Code extension)
   const handleMessage = useCallback((event: MessageEvent) => {
     const data = event.data as BalanceUpdate;
     if (data && data.type === 'balanceUpdate') {
       setCredits(data.credits);
-      setCreditsPerMinute(data.creditsPerMinute);
-      setIsEarning(data.isEarning);
-      if (data.isEarning) {
-        setLastEarnTime(Date.now());
-      }
     }
   }, []);
 
@@ -50,52 +57,54 @@ export default function ExtensionPage() {
     };
   }, [handleMessage]);
 
-  // Initialize AdSense ads
+  // Fetch surveys from backend
   useEffect(() => {
-    if (adsInitialized) return;
-
-    const initAds = () => {
+    const fetchSurveys = async () => {
       try {
-        if (typeof window !== 'undefined' && (window.adsbygoogle = window.adsbygoogle || [])) {
-          const ads = document.querySelectorAll('.adsbygoogle:not([data-adsbygoogle-status])');
-          
-          if (ads.length > 0) {
-            ads.forEach((ad) => {
-              try {
-                (window.adsbygoogle as unknown[]).push({});
-              } catch (e) {
-                console.error('Error pushing ad:', e);
-              }
-            });
-            setAdsInitialized(true);
-          }
+        setLoading(true);
+        setError(null);
+        
+        // Get auth token from parent or storage
+        const token = localStorage.getItem('payless_token');
+        
+        if (!token) {
+          setError('Please sign in to view surveys');
+          setLoading(false);
+          return;
         }
-      } catch (e) {
-        console.error('AdSense initialization error:', e);
+
+        const response = await fetch('/api/cpx/surveys', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          if (response.status === 503) {
+            setError('Surveys not yet configured');
+          } else {
+            setError('Failed to load surveys');
+          }
+          setLoading(false);
+          return;
+        }
+
+        const data: SurveysResponse = await response.json();
+        setSurveys(data.surveys);
+      } catch (err) {
+        console.error('Failed to fetch surveys:', err);
+        setError('Failed to load surveys');
+      } finally {
+        setLoading(false);
       }
     };
 
-    // Wait for AdSense script to load
-    if (window.adsbygoogle) {
-      initAds();
-    } else {
-      // Retry after a delay if script hasn't loaded
-      const timer = setTimeout(initAds, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [adsInitialized]);
-
-  // Auto-fade earning indicator after 5 seconds of no updates
-  useEffect(() => {
-    if (lastEarnTime) {
-      const timeout = setTimeout(() => {
-        if (Date.now() - lastEarnTime > 5000) {
-          setIsEarning(false);
-        }
-      }, 5000);
-      return () => clearTimeout(timeout);
-    }
-  }, [lastEarnTime]);
+    fetchSurveys();
+    
+    // Refresh surveys every 5 minutes
+    const interval = setInterval(fetchSurveys, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Format credits for display
   const formatCredits = (value: number) => {
@@ -127,7 +136,7 @@ export default function ExtensionPage() {
             </div>
             <div>
               <div className="font-semibold text-sm">Payless AI</div>
-              <div className={`text-[10px] ${textMuted}`}>Free AI, powered by ads</div>
+              <div className={`text-[10px] ${textMuted}`}>Earn credits with surveys</div>
             </div>
           </div>
         </div>
@@ -136,14 +145,6 @@ export default function ExtensionPage() {
       {/* Credit Display */}
       <div className="p-3 flex-shrink-0">
         <div className={`${creditsBg} rounded-xl p-4 relative overflow-hidden`}>
-          {/* Earning animation background */}
-          {isEarning && (
-            <div className={`absolute inset-0 ${isDark ? 'bg-black/10' : 'bg-white/10'}`} style={{
-              background: `linear-gradient(90deg, transparent, ${isDark ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.2)'}, transparent)`,
-              animation: 'shimmer 2s infinite',
-            }} />
-          )}
-          
           <div className="relative">
             <div className={`text-[10px] uppercase tracking-wider ${isDark ? 'text-black/60' : 'text-white/60'} mb-1`}>Your Credits</div>
             <div className="text-3xl font-bold tabular-nums">
@@ -154,87 +155,97 @@ export default function ExtensionPage() {
               )}
             </div>
             
-            {/* Earning indicator */}
-            <div className={`text-xs ${isDark ? 'text-black/60' : 'text-white/60'} mt-2 flex items-center gap-1`}>
-              {isEarning ? (
-                <>
-                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  <span>+{creditsPerMinute}/min</span>
-                </>
-              ) : credits === null ? (
-                <>
-                  <span className={`w-2 h-2 rounded-full ${isDark ? 'bg-black/30' : 'bg-white/30'}`} />
-                  <span>Sign in to earn</span>
-                </>
-              ) : (
-                <>
-                  <span className={`w-2 h-2 rounded-full ${isDark ? 'bg-black/30' : 'bg-white/30'}`} />
-                  <span>Keep sidebar open to earn</span>
-                </>
-              )}
+            <div className={`text-xs ${isDark ? 'text-black/60' : 'text-white/60'} mt-2`}>
+              Complete surveys below to earn more
             </div>
           </div>
         </div>
       </div>
 
-      {/* Earning Rate Info */}
-      <div className="px-3 pb-2 flex-shrink-0">
-        <div className={`${cardBg} rounded-lg p-3 border ${border}`}>
-          <div className="flex items-center justify-between text-xs">
-            <span className={textMuted}>Earn rate</span>
-            <span className="font-medium">{creditsPerMinute} credits/min</span>
-          </div>
-          <div className="flex items-center justify-between text-xs mt-1">
-            <span className={textMuted}>Per hour</span>
-            <span className={textMuted}>~{creditsPerMinute * 60} credits</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Ad Stack - Optimized for vertical sidebar */}
+      {/* Survey List */}
       <div className="flex-1 p-3 space-y-3 overflow-y-auto">
-        {/* Ad Unit 1 - Responsive Display Ad */}
-        <div className={`${cardBg} rounded-lg p-2 border ${border} min-h-[250px] flex items-center justify-center`}>
-          <ins
-            className="adsbygoogle"
-            style={{ display: "block" }}
-            data-ad-client="ca-pub-6034027262191917"
-            data-ad-slot=""
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          />
+        <div className={`text-xs ${textMuted} uppercase tracking-wider mb-2`}>
+          Available Surveys ({surveys.length})
         </div>
 
-        {/* Ad Unit 2 - Responsive Display Ad */}
-        <div className={`${cardBg} rounded-lg p-2 border ${border} min-h-[300px] flex items-center justify-center`}>
-          <ins
-            className="adsbygoogle"
-            style={{ display: "block" }}
-            data-ad-client="ca-pub-6034027262191917"
-            data-ad-slot=""
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          />
-        </div>
-
-        {/* Ad Unit 3 - Responsive Display Ad */}
-        <div className={`${cardBg} rounded-lg p-2 border ${border} min-h-[250px] flex items-center justify-center`}>
-          <ins
-            className="adsbygoogle"
-            style={{ display: "block" }}
-            data-ad-client="ca-pub-6034027262191917"
-            data-ad-slot=""
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          />
-        </div>
+        {loading ? (
+          <div className={`${cardBg} rounded-lg p-6 border ${border} text-center`}>
+            <div className="animate-pulse">
+              <div className={`w-8 h-8 rounded-full ${isDark ? 'bg-white/10' : 'bg-black/10'} mx-auto mb-3`}></div>
+              <div className={`${textMuted} text-sm`}>Loading surveys...</div>
+            </div>
+          </div>
+        ) : error ? (
+          <div className={`${cardBg} rounded-lg p-6 border ${border} text-center`}>
+            <div className={`${textMuted} text-sm`}>{error}</div>
+          </div>
+        ) : surveys.length === 0 ? (
+          <div className={`${cardBg} rounded-lg p-6 border ${border} text-center`}>
+            <svg className={`w-8 h-8 mx-auto mb-3 ${textMuted}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <div className={`${textMuted} text-sm`}>No surveys available right now</div>
+            <div className={`${textMuted} text-xs mt-1`}>Check back later for new opportunities</div>
+          </div>
+        ) : (
+          surveys.map((survey) => (
+            <a
+              key={survey.id}
+              href={survey.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${cardBg} rounded-lg p-4 border ${border} block hover:bg-white/5 transition-colors group`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-medium text-sm">Survey #{survey.id.slice(-6)}</span>
+                    {survey.type === 'need_qualification' && (
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${isDark ? 'bg-yellow-500/20 text-yellow-400' : 'bg-yellow-100 text-yellow-700'}`}>
+                        Quick
+                      </span>
+                    )}
+                  </div>
+                  <div className={`text-xs ${textMuted} flex items-center gap-3`}>
+                    <span className="flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {survey.lengthMinutes} min
+                    </span>
+                    {survey.rating && survey.ratingCount > 0 && (
+                      <span className="flex items-center gap-1">
+                        <svg className="w-3 h-3 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                        {survey.rating.toFixed(1)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <div className="font-bold text-green-500 text-lg">
+                    +{survey.creditsReward}
+                  </div>
+                  <div className={`text-[10px] ${textMuted}`}>credits</div>
+                </div>
+              </div>
+              <div className={`mt-3 text-xs ${textMuted} flex items-center gap-1 group-hover:text-white/70 transition-colors`}>
+                <span>Start survey</span>
+                <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </a>
+          ))
+        )}
       </div>
 
       {/* Footer */}
       <footer className={`p-3 border-t ${border} flex-shrink-0`}>
         <div className="text-center">
           <div className={`text-[10px] ${textMuted} mb-2`}>
-            Ads help keep AI free for everyone
+            Complete surveys to earn free AI credits
           </div>
           <a 
             href="https://payless.chat" 
@@ -245,14 +256,6 @@ export default function ExtensionPage() {
           </a>
         </div>
       </footer>
-
-      {/* Custom styles for shimmer animation */}
-      <style jsx>{`
-        @keyframes shimmer {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-      `}</style>
     </div>
   );
 }
