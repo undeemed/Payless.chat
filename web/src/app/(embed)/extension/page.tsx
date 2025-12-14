@@ -8,6 +8,8 @@ type SortOption = 'score' | 'points' | 'conversion' | 'time';
 const CPX_SCRIPT_ID = 'cpx-research-script';
 const CPX_SCRIPT_URL = 'https://cdn.cpx-research.com/assets/js/script_tag_v2.0.js';
 
+type SortOption = 'score' | 'points' | 'conversion' | 'time';
+
 export default function ExtensionPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [secureHash, setSecureHash] = useState<string | null>(null);
@@ -153,8 +155,8 @@ export default function ExtensionPage() {
     const script1 = {
       div_id: "cpx-surveys",
       theme_style: 2, // sidebar style
-      order_by: 2, // best money
-      limit_surveys: 10
+      order_by: getOrderBy(sortOption),
+      limit_surveys: 50 // Increased from 10 to show more surveys
     };
 
     const config = {
@@ -279,12 +281,27 @@ export default function ExtensionPage() {
 
       {/* CPX Survey Widget Container */}
       <div className="flex-1 p-3 overflow-y-auto">
-        <div className="text-xs text-neutral-400 uppercase tracking-wider mb-2">
-          Available Surveys
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-xs text-neutral-400 uppercase tracking-wider">
+            Available Surveys
+          </div>
+          
+          {/* Sorting Dropdown */}
+          <select
+            value={sortOption}
+            onChange={(e) => handleSortChange(e.target.value as SortOption)}
+            className="text-xs bg-neutral-800 border border-neutral-700 text-white rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-500 cursor-pointer"
+          >
+            <option value="points">💰 Best Points</option>
+            <option value="score">⭐ Best Score</option>
+            <option value="conversion">📈 Best Conversion</option>
+            <option value="time">⏱️ Shortest Time</option>
+          </select>
         </div>
         
         {/* CPX surveys will render here */}
         <div 
+          key={configKey}
           id="cpx-surveys" 
           style={{ minHeight: '500px', width: '100%' }}
         />
@@ -309,6 +326,7 @@ export default function ExtensionPage() {
       {/* CPX Research Script */}
       {userId && secureHash && (
         <Script 
+          key={`cpx-script-${configKey}`}
           src="https://cdn.cpx-research.com/assets/js/script_tag_v2.0.js"
           strategy="afterInteractive"
         />

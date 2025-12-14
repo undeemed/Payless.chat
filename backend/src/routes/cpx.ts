@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { authMiddleware } from '../middleware/auth.js';
-import { addCreditEntry, getCreditBalance } from '../db/supabase.js';
+import { addCreditEntry, getCreditBalance, getSupabaseClient } from '../db/supabase.js';
 
 const router = Router();
 
@@ -174,6 +174,21 @@ router.get('/postback', async (req: Request, res: Response) => {
     const userId = user_id as string;
     const transactionId = trans_id as string;
     const offerId = offer_id as string || 'unknown';
+
+    // Check if this transaction has already been processed (deduplication)
+    const client = getSupabaseClient();
+    const { data: existingEntry } = await client
+      .from('credit_ledger')
+      .select('id')
+      .ilike('description', `%Trans: ${transactionId}%`)
+      .limit(1)
+      .single();
+
+    if (existingEntry) {
+      console.log(`CPX postback DUPLICATE: Transaction ${transactionId} already processed, skipping`);
+      res.json({ status: 'ok', message: 'Transaction already processed' });
+      return;
+    }
 
     if (statusCode === 1) {
       // Survey completed - credit the user

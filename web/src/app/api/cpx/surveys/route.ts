@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
       output_method: 'api',
       ip_user: ipUser,
       user_agent: userAgent,
-      limit: '12',
+      limit: '100',
       secure_hash: secureHash,
     });
 
