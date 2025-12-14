@@ -49,12 +49,12 @@ export default function HomePage() {
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-primary">
             Free AI for VS Code.
             <br />
-            <span className="text-muted-foreground font-normal">Powered by ads.</span>
+            <span className="text-muted-foreground font-normal">Powered by surveys.</span>
           </h1>
           
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             Access GPT-5, Claude 4.5, and Gemini 3 directly in your editor. 
-            No subscription required. Just keep a small ad sidebar open.
+            No subscription required. Complete quick surveys to earn credits.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
@@ -122,7 +122,7 @@ export default function HomePage() {
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl font-bold mb-4">How It Works</h2>
-              <p className="text-muted-foreground">Transparent, fair, and completely free.</p>
+              <p className="text-muted-foreground">Simple, transparent, and completely free.</p>
             </div>
 
             <div className="space-y-12">
@@ -130,15 +130,15 @@ export default function HomePage() {
                 <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xl shrink-0">1</div>
                 <div>
                   <h3 className="text-xl font-bold mb-2">Install the Extension</h3>
-                  <p className="text-muted-foreground">Add Payless AI to VS Code. A small sidebar will appear displaying non-intrusive ads.</p>
+                  <p className="text-muted-foreground">Add Payless AI to VS Code. A sidebar will show available surveys you can complete.</p>
                 </div>
               </div>
 
               <div className="flex gap-6">
                 <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xl shrink-0">2</div>
                 <div>
-                  <h3 className="text-xl font-bold mb-2">Earn Credits Automatically</h3>
-                  <p className="text-muted-foreground">While the sidebar is visible, you earn 10 credits per minute. That&apos;s about 600 credits per hour of coding.</p>
+                  <h3 className="text-xl font-bold mb-2">Complete Surveys</h3>
+                  <p className="text-muted-foreground">Earn credits by completing quick surveys. Most take 2-15 minutes and earn 10-100+ credits each.</p>
                 </div>
               </div>
 

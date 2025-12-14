@@ -21,7 +21,7 @@ export default function DashboardPage() {
       setError(null);
     } catch (err) {
       console.error('Failed to fetch stats:', err);
-      setError('Failed to load stats. Make sure backend is running.');
+      setError('Failed to load stats.');
     }
   };
 
@@ -44,13 +44,13 @@ export default function DashboardPage() {
     loadUser();
   }, [router, supabase.auth]);
 
-  // Poll for updates every 5 seconds
+  // Poll for updates every 30 seconds
   useEffect(() => {
     if (!user) return;
 
     const interval = setInterval(() => {
       fetchStats();
-    }, 5000); // Update every 5 seconds
+    }, 30000); // Update every 30 seconds
 
     return () => clearInterval(interval);
   }, [user]);
@@ -58,13 +58,6 @@ export default function DashboardPage() {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push("/");
-  };
-
-  const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) return `${hours}h ${mins}m`;
-    return `${mins}m`;
   };
 
   if (loading) {
@@ -105,9 +98,6 @@ export default function DashboardPage() {
         {error && (
           <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive">
             {error}
-            <div className="mt-2 text-xs text-muted-foreground">
-              Backend URL: {process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000'}
-            </div>
           </div>
         )}
 
@@ -117,28 +107,23 @@ export default function DashboardPage() {
             <div className="text-sm text-muted-foreground mb-2">Credit Balance</div>
             <div className="text-4xl font-bold">{stats?.current_balance ?? 0}</div>
             <div className="text-sm text-muted-foreground mt-2">
-              +{stats?.credits_per_minute ?? 10}/min while watching ads
+              Available for AI chat
             </div>
-            {stats && (
-              <div className="text-xs text-muted-foreground mt-1">
-                Updates every 5s
-              </div>
-            )}
           </div>
 
           <div className="bg-card border border-border rounded-xl p-6">
-            <div className="text-sm text-muted-foreground mb-2">Credits Earned Today</div>
+            <div className="text-sm text-muted-foreground mb-2">Earned Today</div>
             <div className="text-4xl font-bold">{stats?.credits_earned_today ?? 0}</div>
             <div className="text-sm text-muted-foreground mt-2">
-              {formatTime(stats?.total_seconds_today ?? 0)} of ad viewing
+              From completed surveys
             </div>
           </div>
 
           <div className="bg-card border border-border rounded-xl p-6">
-            <div className="text-sm text-muted-foreground mb-2">All-Time Credits</div>
+            <div className="text-sm text-muted-foreground mb-2">All-Time Earned</div>
             <div className="text-4xl font-bold">{Math.floor(stats?.total_credits_earned ?? 0)}</div>
             <div className="text-sm text-muted-foreground mt-2">
-              {formatTime(stats?.total_seconds_all_time ?? 0)} total viewing time
+              Total survey earnings
             </div>
           </div>
         </div>
@@ -151,7 +136,7 @@ export default function DashboardPage() {
             <div className="space-y-4">
               <h3 className="font-medium">1. Install the VS Code Extension</h3>
               <p className="text-sm text-muted-foreground">
-                The extension displays ads in your sidebar while you code, earning you credits automatically.
+                The extension displays surveys in your sidebar. Complete surveys to earn credits.
               </p>
               <a
                 href="vscode:extension/payless-ai.payless-ai"
@@ -162,13 +147,13 @@ export default function DashboardPage() {
             </div>
 
             <div className="space-y-4">
-              <h3 className="font-medium">2. Start Earning Credits</h3>
+              <h3 className="font-medium">2. Complete Surveys</h3>
               <p className="text-sm text-muted-foreground">
-                Keep the ad sidebar open while coding. You&apos;ll earn 10 credits per minute - about 600 credits per hour.
+                Earn points by completing surveys. Surveys typically take 2-15 minutes and earn 10-100+ credits.
               </p>
               <div className="text-sm text-muted-foreground">
                 <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>
-                Extension will sync with your account automatically
+                Credits sync automatically to your account
               </div>
             </div>
           </div>

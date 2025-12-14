@@ -46,7 +46,7 @@ ALTER TABLE public.credit_ledger
 -- Add constraint for credit reasons
 ALTER TABLE public.credit_ledger 
   ADD CONSTRAINT credit_ledger_reason_check 
-  CHECK (reason IN ('mint', 'allocate', 'spend', 'adjust', 'ad_view'));
+  CHECK (reason IN ('mint', 'allocate', 'spend', 'adjust', 'ad_view', 'survey_complete'));
 
 -- Enable RLS
 ALTER TABLE public.credit_ledger ENABLE ROW LEVEL SECURITY;
